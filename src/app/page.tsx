@@ -47,7 +47,6 @@ export default async function Home() {
               fill
               priority
               loading="eager"
-              quality={90}
               sizes="100vw"
               className="sanaa-hero-image object-cover object-[68%_14%] brightness-110 contrast-[1.05] saturate-[1.1]"
             />
@@ -117,6 +116,75 @@ export default async function Home() {
                 </div>
               );
             })}
+          </Reveal>
+        </section>
+        <PatternBorder color="#C68A2E" bg="#15110D" height={6} />
+
+        {/* From Click to Craft — marketing → production journey */}
+        <section className="bg-cream py-20">
+          <Reveal className="mx-auto max-w-7xl px-5 sm:px-8">
+            <div className="mx-auto max-w-2xl text-center">
+              <span className="text-xs font-semibold uppercase tracking-widest text-forest">
+                How Ushanga works
+              </span>
+              <h2 className="mt-2 font-display text-3xl font-semibold text-charcoal">
+                From click to craft
+              </h2>
+              <p className="mt-3 text-sm text-ink-muted">
+                Every order placed on this marketplace becomes a real, tracked
+                piece of work at the Sekenani studio — marketing and
+                production are one connected pipeline, not two systems.
+              </p>
+            </div>
+
+            <div className="relative mt-14 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="pointer-events-none absolute left-0 right-0 top-6 hidden h-px bg-sand-deep lg:block" />
+              {[
+                {
+                  step: "01",
+                  title: "Discover & order",
+                  desc: "A buyer browses the marketplace or designs a custom piece in the AI Mirror studio.",
+                },
+                {
+                  step: "02",
+                  title: "Routed to production",
+                  desc: "The order becomes a real work order, assigned to a named artisan at the Sekenani studio.",
+                },
+                {
+                  step: "03",
+                  title: "Made & quality-checked",
+                  desc: "The piece is beaded by hand and moves through quality checks before dispatch.",
+                },
+                {
+                  step: "04",
+                  title: "Tracked to delivery",
+                  desc: "The buyer follows live status on a shareable tracking page, end to end.",
+                },
+              ].map((s) => (
+                <div key={s.step} className="relative flex flex-col items-center text-center sm:items-start sm:text-left">
+                  <span className="relative z-10 flex h-12 w-12 items-center justify-center rounded-full border-2 border-gold bg-cream font-display text-sm font-semibold text-clay-dark">
+                    {s.step}
+                  </span>
+                  <p className="mt-4 font-display text-base font-semibold text-charcoal">{s.title}</p>
+                  <p className="mt-1.5 text-sm text-ink-muted">{s.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-12 flex flex-wrap items-center justify-center gap-4">
+              <Link
+                href="/marketplace"
+                className="flex items-center gap-2 rounded-full bg-charcoal px-6 py-3 text-sm font-semibold text-cream transition-transform hover:scale-[1.02]"
+              >
+                See the marketplace <ArrowRight size={15} />
+              </Link>
+              <Link
+                href="/production"
+                className="flex items-center gap-2 rounded-full border border-sand-deep px-6 py-3 text-sm font-semibold text-charcoal-soft transition-colors hover:border-clay hover:text-clay"
+              >
+                See the live production queue
+              </Link>
+            </div>
           </Reveal>
         </section>
         <PatternBorder color="#C68A2E" bg="#15110D" height={6} />

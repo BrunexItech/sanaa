@@ -55,7 +55,6 @@ export function HeroSlider({ slides }: { slides: Slide[] }) {
             alt={s.alt}
             fill
             priority={i === 0}
-            quality={90}
             sizes="100vw"
             className={`object-cover ${i === index ? "sanaa-hero-image" : ""}`}
           />
