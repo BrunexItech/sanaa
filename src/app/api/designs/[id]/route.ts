@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { computeDesignPriceCents } from "@/lib/configurator";
 
 export async function GET(
   _req: Request,
@@ -9,6 +8,7 @@ export async function GET(
   const { id } = await params;
   const design = await prisma.customDesign.findUnique({ where: { id } });
   if (!design) return NextResponse.json({ error: "Design not found." }, { status: 404 });
-  const priceCents = computeDesignPriceCents(design.itemType, design.patternStyle) ?? 0;
-  return NextResponse.json({ design: { ...design, priceCents } });
+  // priceCents is now stored on the design at creation time (preset configurator
+  // and AI-prompt flows compute it differently, so it's no longer re-derived here).
+  return NextResponse.json({ design });
 }

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getItemType, getColorway, getPattern } from "@/lib/configurator";
+import { getItemType, getColorway, getPattern, computeDesignPriceCents } from "@/lib/configurator";
 
 export async function POST(req: Request) {
   const body = await req.json();
@@ -10,14 +10,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid design configuration." }, { status: 400 });
   }
 
+  const priceCents = computeDesignPriceCents(itemType, patternStyle) ?? 0;
+
   const design = await prisma.customDesign.create({
     data: {
+      source: "PRESET",
       itemType,
       colorway,
       patternStyle,
       size,
       notes: notes?.slice(0, 500) || null,
       previewSeed: Math.floor(Math.random() * 1_000_000),
+      priceCents,
     },
   });
 

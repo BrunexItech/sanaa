@@ -46,6 +46,14 @@ export function computeDesignPriceCents(itemTypeId: string, patternId: string) {
   return Math.round(item.basePriceCents * pattern.priceMultiplier);
 }
 
+// AI-prompted pieces are bespoke, one-off work — priced at a modest premium
+// over the base item price until an artisan/QA reviews actual feasibility.
+export function computeAiDesignPriceCents(itemTypeId: string) {
+  const item = getItemType(itemTypeId);
+  if (!item) return null;
+  return Math.round(item.basePriceCents * 1.2);
+}
+
 export function formatKES(cents: number) {
   return new Intl.NumberFormat("en-KE", {
     style: "currency",

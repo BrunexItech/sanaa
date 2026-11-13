@@ -92,17 +92,29 @@ model Product {
   orders          Order[]
 }
 
-// Deterministic "AI configurator" design — not a generative model, a guided
-// set of real craft options that still has to be producible by an artisan.
+enum DesignSource {
+  PRESET     // guided configurator: real, deterministic, always-producible combinations
+  AI_PROMPT  // customer typed a free-text description, OpenAI generated a concept image
+}
+
 model CustomDesign {
-  id           String   @id @default(cuid())
-  itemType     String   // necklace, bracelet, belt, earrings, bag strap
-  colorway     String   // named palette, e.g. "Maasai Sunset"
-  patternStyle String   // e.g. "Chevron", "Diamond", "Single Strand"
-  size         String   // S/M/L or measurement band
+  id           String       @id @default(cuid())
+  source       DesignSource @default(PRESET)
+  itemType     String       // necklace, bracelet, belt, earrings, bag strap
+  size         String       // S/M/L or measurement band
   notes        String?
-  previewSeed  Int      // deterministic seed driving the SVG preview on the frontend
-  createdAt    DateTime @default(now())
+  priceCents   Int          // computed/estimated at creation time
+
+  // PRESET fields
+  colorway     String?      // named palette, e.g. "Maasai Sunset"
+  patternStyle String?      // e.g. "Chevron", "Diamond", "Single Strand"
+  previewSeed  Int?         // deterministic seed driving the SVG preview on the frontend
+
+  // AI_PROMPT fields
+  prompt       String?      // the customer's free-text description
+  aiImageUrl   String?      // generated concept image (data URL)
+
+  createdAt    DateTime     @default(now())
 
   orders       Order[]
 }

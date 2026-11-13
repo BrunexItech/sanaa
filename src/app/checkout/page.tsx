@@ -31,8 +31,10 @@ type DesignSummary = {
   kind: "CUSTOM_DESIGN";
   id: string;
   itemType: string;
-  colorway: string;
-  patternStyle: string;
+  source: "PRESET" | "AI_PROMPT";
+  colorway: string | null;
+  patternStyle: string | null;
+  aiImageUrl: string | null;
   priceCents: number;
 };
 
@@ -74,8 +76,10 @@ function CheckoutInner() {
               kind: "CUSTOM_DESIGN",
               id: data.design.id,
               itemType: data.design.itemType,
+              source: data.design.source,
               colorway: data.design.colorway,
               patternStyle: data.design.patternStyle,
+              aiImageUrl: data.design.aiImageUrl,
               priceCents: data.design.priceCents,
             });
           } else {
@@ -367,10 +371,17 @@ function CheckoutInner() {
                   </div>
                   <p className="text-sm font-medium text-charcoal">{item.name}</p>
                 </>
+              ) : item.source === "AI_PROMPT" && item.aiImageUrl ? (
+                <>
+                  <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-sand">
+                    <img src={item.aiImageUrl} alt="" className="h-full w-full object-cover" />
+                  </div>
+                  <p className="text-sm font-medium text-charcoal">AI-designed {item.itemType}</p>
+                </>
               ) : (
                 <>
                   <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-sand">
-                    <BeadPreview colorwayId={item.colorway} patternId={item.patternStyle} itemTypeId={item.itemType} compact />
+                    <BeadPreview colorwayId={item.colorway ?? "mara-sunset"} patternId={item.patternStyle ?? "chevron"} itemTypeId={item.itemType} compact />
                   </div>
                   <p className="text-sm font-medium text-charcoal">Custom {item.itemType} design</p>
                 </>

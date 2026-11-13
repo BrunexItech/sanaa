@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { computeDesignPriceCents } from "@/lib/configurator";
 
 function generateReference(channel: "ONLINE" | "WALK_IN") {
   const prefix = channel === "WALK_IN" ? "USH-WI" : "USH-ON";
@@ -36,9 +35,7 @@ export async function POST(req: Request) {
   } else if (source === "CUSTOM_DESIGN") {
     const design = await prisma.customDesign.findUnique({ where: { id: customDesignId } });
     if (!design) return NextResponse.json({ error: "Design not found." }, { status: 404 });
-    const unit = computeDesignPriceCents(design.itemType, design.patternStyle);
-    if (unit === null) return NextResponse.json({ error: "Invalid design." }, { status: 400 });
-    totalCents = unit * quantity;
+    totalCents = design.priceCents * quantity;
 
     // Round-robin assign to an active artisan who can produce this piece.
     const artisans = await prisma.artisan.findMany({ where: { active: true } });
