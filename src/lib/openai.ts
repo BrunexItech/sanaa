@@ -35,12 +35,14 @@ export function buildDesignPrompt(itemType: string, userPrompt: string) {
   ].join(" ");
 }
 
-// Per-item framing for the "see it on you" model shot, so a necklace reads as
-// a portrait, a bracelet as a wrist close-up, etc.
+// Per-item framing for the "see it on you" model shot — each description is
+// explicit about which body region is actually in frame, so the generated
+// photo places the piece where it is actually worn (a belt at the waist/hips,
+// not cropped out by a "waist-up" portrait that only shows the torso).
 const MODEL_FRAMING: Record<string, string> = {
   necklace: "a close-up fashion portrait from the shoulders up, the necklace/collar clearly visible around her neck",
   bracelet: "a close-up of her wrist and forearm, raised naturally, the bracelet clearly visible",
-  belt: "a three-quarter fashion shot from the waist up showing the belt clearly at her waistline",
+  belt: "a full-length or three-quarter-length fashion shot framed from mid-thigh to chest, so her waist and hips are fully in frame with the belt clearly wrapped around her waistline over her clothing",
   earrings: "a close-up fashion portrait of her face and shoulders, turned slightly to show the earrings clearly",
   bagStrap: "a three-quarter shot of her carrying a bag over one shoulder, the strap clearly visible",
 };
@@ -51,20 +53,21 @@ const MODEL_DESCRIPTORS = [
   "a Maa woman in her twenties, hair wrapped in a simple headscarf",
 ];
 
-// Second, independent generation for the "See It on You" panel: same design
-// description, rendered as a real-looking model photo instead of a flat-lay
-// product shot. Framing varies by item type; the model descriptor can be
-// varied for a "Change Model" re-roll.
-export function buildModelPrompt(itemType: string, userPrompt: string, variant = 0) {
+// The "See It on You" panel is an *edit* of the actual generated product
+// image (via images.edit, passing that exact PNG as input), not a second
+// independent generate() call re-describing the item from text. That's what
+// keeps the worn piece pixel-faithful to what was actually generated and
+// shown as "your design" — same beads, same colours, same pattern — instead
+// of a similar-but-different reinterpretation.
+export function buildModelEditPrompt(itemType: string, variant = 0) {
   const itemLabel = ITEM_LABELS[itemType] ?? "a piece of Maasai-style beaded jewellery";
   const framing = MODEL_FRAMING[itemType] ?? "a close-up fashion portrait";
   const model = MODEL_DESCRIPTORS[variant % MODEL_DESCRIPTORS.length];
-  const safePrompt = userPrompt.trim().slice(0, 400);
   return [
-    `Professional fashion photograph of ${model}, warm genuine smile, outdoors in the Maasai Mara savanna, soft natural daylight, acacia trees softly out of focus in the background.`,
-    `She is wearing ${itemLabel} matching this design exactly: "${safePrompt}".`,
+    `The attached image shows ${itemLabel}, an exact piece of real beadwork — the design, bead colours, pattern and craftsmanship in that image are final and must not be changed, redesigned, restyled or reinterpreted in any way.`,
+    `Using that exact item, unaltered, generate a new photograph of ${model}, warm genuine smile, wearing it outdoors in the Maasai Mara savanna, soft natural daylight, acacia trees softly out of focus in the background.`,
     `Shot as ${framing}.`,
-    "The beadwork colors, pattern and craftsmanship must match the description precisely, realistic bead texture, premium editorial fashion photography.",
-    "No text, no watermarks, no logos in the image.",
+    "The item in the new photo must be visually identical to the attached reference image — same beads, same colours, same layout — only the camera angle, lighting and the fact that it is now worn on a person should differ.",
+    "Realistic bead texture, premium editorial fashion photography. No text, no watermarks, no logos in the image.",
   ].join(" ");
 }

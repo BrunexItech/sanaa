@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { toFile } from "openai";
 import { prisma } from "@/lib/db";
-import { getOpenAI, IMAGE_MODEL, buildModelPrompt } from "@/lib/openai";
+import { getOpenAI, IMAGE_MODEL, buildModelEditPrompt } from "@/lib/openai";
 
 export async function GET(
   _req: Request,
@@ -22,7 +23,7 @@ export async function PATCH(
 ) {
   const { id } = await params;
   const design = await prisma.customDesign.findUnique({ where: { id } });
-  if (!design || design.source !== "AI_PROMPT" || !design.prompt) {
+  if (!design || design.source !== "AI_PROMPT" || !design.aiImageUrl) {
     return NextResponse.json({ error: "Design not found." }, { status: 404 });
   }
   if (!process.env.OPENAI_API_KEY) {
@@ -34,8 +35,21 @@ export async function PATCH(
 
   try {
     const openai = getOpenAI();
-    const modelPrompt = buildModelPrompt(design.itemType, design.prompt, variant);
-    const result = await openai.images.generate({ model: IMAGE_MODEL, prompt: modelPrompt, size: "1024x1024", n: 1 });
+    const editPrompt = buildModelEditPrompt(design.itemType, variant);
+
+    // Edit the *actual* generated product image rather than re-describing it
+    // from text — this is what keeps the worn piece pixel-faithful to the
+    // exact design the customer already saw, not a similar re-generation.
+    const productBase64 = design.aiImageUrl.split(",")[1] ?? "";
+    const productBuffer = Buffer.from(productBase64, "base64");
+    const productFile = await toFile(productBuffer, "product.png", { type: "image/png" });
+
+    const result = await openai.images.edit({
+      model: IMAGE_MODEL,
+      image: productFile,
+      prompt: editPrompt,
+      size: "1024x1024",
+    });
     const b64 = result.data?.[0]?.b64_json;
     if (!b64) throw new Error("No image returned by the image generation model.");
 

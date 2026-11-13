@@ -125,8 +125,8 @@ async function main() {
       slug: "sekenani-beaded-belt",
       category: "Belts",
       priceCents: 540000,
-      image: "/images/product-belt.jpg",
-      gallery: ["/images/product-belt.jpg"],
+      image: "/images/product-belt-real.jpg",
+      gallery: ["/images/product-belt-real.jpg"],
       description:
         "Full-grain leather belt hand-wrapped in a continuous beaded chevron pattern, finished with a brass buckle.",
       story:
