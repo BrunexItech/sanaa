@@ -23,9 +23,9 @@ const TOOLS = [
     description: "Track accepted orders through making, quality check, and dispatch.",
   },
   {
-    href: "/documentation",
+    href: "/uploads",
     icon: Camera,
-    title: "Documentation: add a product",
+    title: "Uploads: add a product",
     description: "Photograph a finished piece and publish it live to the marketplace.",
   },
   {

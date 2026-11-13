@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
-  Sparkles,
+  ImagePlus,
   Wand2,
   RefreshCcw,
   ShieldCheck,
@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { PatternBorder } from "@/components/PatternBorder";
 import { Spinner } from "@/components/Spinner";
 import {
   ITEM_TYPES,
@@ -48,6 +49,7 @@ const PROMPT_IDEAS = [
 // progress climb (never claiming 100% until the API actually responds)
 // so the wait feels alive instead of a frozen spinner.
 const ESTIMATED_MS = 17000;
+const DRESS_ESTIMATED_MS = 12000;
 
 export default function DesignPage() {
   const router = useRouter();
@@ -66,10 +68,12 @@ export default function DesignPage() {
   // single simultaneous spinner.
   const [modelImageUrl, setModelImageUrl] = useState<string | null>(null);
   const [dressing, setDressing] = useState(false);
+  const [dressProgress, setDressProgress] = useState(0);
   const [modelError, setModelError] = useState<string | null>(null);
   const modelVariant = useRef(0);
 
   const progressTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const dressProgressTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const selectedItem = ITEM_TYPES.find((i) => i.id === itemType)!;
   const priceCents = useMemo(
@@ -80,12 +84,22 @@ export default function DesignPage() {
   useEffect(() => {
     return () => {
       if (progressTimer.current) clearInterval(progressTimer.current);
+      if (dressProgressTimer.current) clearInterval(dressProgressTimer.current);
     };
   }, []);
 
   async function dressModel(id: string, variant: number) {
     setDressing(true);
     setModelError(null);
+    setDressProgress(2);
+
+    const startedAt = Date.now();
+    dressProgressTimer.current = setInterval(() => {
+      const elapsed = Date.now() - startedAt;
+      const target = Math.min(92, Math.round((elapsed / DRESS_ESTIMATED_MS) * 92));
+      setDressProgress((p) => (target > p ? target : p + (p < 92 ? 0.6 : 0)));
+    }, 180);
+
     try {
       const res = await fetch(`/api/designs/${id}`, {
         method: "PATCH",
@@ -94,11 +108,18 @@ export default function DesignPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Could not generate that look.");
+
+      if (dressProgressTimer.current) clearInterval(dressProgressTimer.current);
+      setDressProgress(100);
+      await new Promise((r) => setTimeout(r, 300));
+
       setModelImageUrl(data.design.aiModelImageUrl);
     } catch (e) {
+      if (dressProgressTimer.current) clearInterval(dressProgressTimer.current);
       setModelError(e instanceof Error ? e.message : "Could not generate that look.");
     } finally {
       setDressing(false);
+      setDressProgress(0);
     }
   }
 
@@ -172,19 +193,16 @@ export default function DesignPage() {
   return (
     <>
       <Header />
-      <main className="flex-1 bg-onyx lg:h-[calc(100dvh-64px)] lg:overflow-hidden">
+      <PatternBorder color="#2F4A3A" bg="#15110D" height={5} />
+      <main className="flex-1 bg-onyx lg:h-[calc(100dvh-64px-5px)] lg:overflow-hidden">
         <div className="mx-auto flex max-w-6xl flex-col px-5 py-4 sm:px-8 lg:h-full lg:py-4">
           <div className="mb-3 shrink-0 lg:mb-2.5">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-gold-soft/30 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-gold-soft">
-              <Sparkles size={11} /> AI Design Studio
+              AI Design Studio
             </span>
             <h1 className="mt-2 font-display text-xl font-semibold text-cream sm:text-2xl lg:mt-1.5">
               Design your own Maa masterpiece
             </h1>
-            <p className="mt-1 max-w-lg text-xs text-cream/60 sm:text-sm">
-              Pick a piece, describe it in your own words, and watch the concept
-              come to life — a Sekenani artisan hand-beads the real thing.
-            </p>
           </div>
 
           <div className="grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-[0.9fr_1fr_1fr] lg:grid-rows-[minmax(0,1fr)] lg:gap-5">
@@ -298,7 +316,7 @@ export default function DesignPage() {
             <div className="flex min-h-0 flex-col gap-3 lg:h-full">
               <div className="flex shrink-0 items-center justify-between">
                 <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.15em] text-gold-soft/80">
-                  <Sparkles size={13} /> Your design in progress
+                  Your design in progress
                 </p>
                 {result && (
                   <button
@@ -355,7 +373,7 @@ export default function DesignPage() {
                 ) : (
                   <div className="relative z-10 flex h-full flex-col items-center justify-center gap-4 px-10 text-center">
                     <span className="flex h-14 w-14 items-center justify-center rounded-full border border-gold-soft/30 bg-white/5">
-                      <Sparkles size={22} className="text-gold-soft" />
+                      <ImagePlus size={22} className="text-gold-soft" />
                     </span>
                     <p className="text-sm font-medium text-cream/80">Your design will appear here</p>
                     <p className="text-xs text-cream/45">
@@ -409,8 +427,27 @@ export default function DesignPage() {
                     </p>
                   </div>
                 ) : dressing ? (
-                  <div className="relative z-10 flex h-full flex-col items-center justify-center gap-4 px-8 text-center">
-                    <Spinner size={28} />
+                  <div className="relative z-10 flex h-full flex-col items-center justify-center gap-5 px-8 text-center">
+                    <div className="relative flex h-20 w-20 items-center justify-center">
+                      <svg className="h-20 w-20 -rotate-90" viewBox="0 0 80 80">
+                        <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="5" />
+                        <circle
+                          cx="40"
+                          cy="40"
+                          r="34"
+                          fill="none"
+                          stroke="#C68A2E"
+                          strokeWidth="5"
+                          strokeLinecap="round"
+                          strokeDasharray={2 * Math.PI * 34}
+                          strokeDashoffset={2 * Math.PI * 34 * (1 - dressProgress / 100)}
+                          style={{ transition: "stroke-dashoffset 180ms linear" }}
+                        />
+                      </svg>
+                      <span className="absolute font-display text-base font-semibold text-cream">
+                        {Math.round(dressProgress)}%
+                      </span>
+                    </div>
                     <div>
                       <p className="text-sm font-medium text-cream">Dressing your design…</p>
                       <p className="mt-1 text-xs text-cream/50">Fitting it on a model, 10–15 seconds.</p>

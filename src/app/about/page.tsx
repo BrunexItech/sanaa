@@ -37,10 +37,10 @@ export default async function AboutPage() {
       <Header />
       <main className="flex-1 bg-white">
         {/* ---------- Hero ---------- */}
-        <div className="relative h-[26rem] w-full sm:h-[32rem]">
+        <div className="relative h-72 w-full sm:h-[26rem]">
           <Image
-            src={img.heroCommunity}
-            alt="Maasai community gathering"
+            src={img.marketVendors}
+            alt="A Maasai market stall of handcrafted beadwork"
             fill
             priority
             sizes="100vw"

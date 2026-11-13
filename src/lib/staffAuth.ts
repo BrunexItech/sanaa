@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-export const STAFF_ROLES = ["Documentation", "Orders Desk", "Production"] as const;
+export const STAFF_ROLES = ["Uploads", "Orders Desk", "Production"] as const;
 export type StaffRole = (typeof STAFF_ROLES)[number];
 
 export type StaffProfile = { name: string; role: StaffRole };

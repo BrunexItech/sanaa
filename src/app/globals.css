@@ -50,10 +50,11 @@ body {
   font-family: var(--font-fraunces), Georgia, serif;
 }
 
-/* Thin scrollbar */
+/* Thin scrollbar — transparent track so it never clashes with light or dark
+   page backgrounds; a neutral thumb that works on both, gold on hover. */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-track { background: var(--sand); }
-::-webkit-scrollbar-thumb { background: var(--sand-deep); border-radius: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(120, 113, 108, 0.35); border-radius: 8px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--gold-soft); }
 
 /* Focus ring consistency */

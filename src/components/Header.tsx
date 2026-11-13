@@ -43,11 +43,12 @@ export function Header() {
       }`}
     >
       <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-3 px-4 py-3 sm:px-6">
-        <Link href="/" className="flex shrink-0 items-center gap-2">
+        <Link href="/" className="flex min-w-0 shrink-0 items-center gap-2">
           <LogoMark size={34} />
-          <span className="flex flex-col leading-none">
-            <span className="font-display text-base font-semibold tracking-tight text-cream whitespace-nowrap 2xl:text-lg">
-              Ushanga
+          <span className="flex min-w-0 flex-col leading-none">
+            <span className="font-display text-sm font-semibold tracking-tight text-cream lg:text-lg lg:whitespace-nowrap">
+              <span className="lg:hidden">Ushanga</span>
+              <span className="hidden lg:inline">Ushanga Sekenani Empowerment Center</span>
             </span>
             <span className="mt-1 hidden whitespace-nowrap text-[8px] font-medium uppercase tracking-[0.18em] text-gold-soft 2xl:block">
               Empower &middot; Create &middot; Thrive

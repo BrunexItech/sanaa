@@ -107,7 +107,7 @@ export default function DashboardPage() {
 
             <div className="flex-1">
               <h1 className="font-display text-3xl font-semibold text-charcoal">
-                Welcome back, {user.name.split(" ")[0]}
+                Welcome back, {user.name}
               </h1>
               <p className="mt-1 text-sm text-ink-muted">Here&apos;s what&apos;s happening with your orders.</p>
 

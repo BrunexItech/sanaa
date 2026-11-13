@@ -159,10 +159,10 @@ function CheckoutInner() {
 
   const [step, setStep] = useState<Step>("details");
   const [method, setMethod] = useState<Method>("mpesa");
-  const [fullName, setFullName] = useState("Amina Hassan");
-  const [email, setEmail] = useState("amina@example.com");
+  const [fullName, setFullName] = useState("H.E. William Ruto");
+  const [email, setEmail] = useState("demo@ushanga.africa");
   const [phone, setPhone] = useState("0712 345 678");
-  const [cardName, setCardName] = useState("Amina Hassan");
+  const [cardName, setCardName] = useState("H.E. William Ruto");
   const [cardNumber, setCardNumber] = useState("4242 4242 4242 4242");
   const [cardExpiry, setCardExpiry] = useState("09/28");
   const [cardCvc, setCardCvc] = useState("123");

@@ -73,7 +73,7 @@ function compressImage(file: File): Promise<string> {
   });
 }
 
-export default function DocumentationPage() {
+export default function UploadsPage() {
   const router = useRouter();
   const { profile, ready } = useStaffProfile();
 
@@ -83,7 +83,7 @@ export default function DocumentationPage() {
   const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (ready && !profile) router.replace("/staff/login?next=/documentation");
+    if (ready && !profile) router.replace("/staff/login?next=/uploads");
   }, [ready, profile, router]);
 
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
@@ -111,7 +111,7 @@ export default function DocumentationPage() {
   }
 
   async function loadRecent() {
-    const res = await fetch("/api/documentation");
+    const res = await fetch("/api/uploads");
     const data = await res.json();
     setRecent(data.products ?? []);
   }
@@ -157,7 +157,7 @@ export default function DocumentationPage() {
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch("/api/documentation", {
+      const res = await fetch("/api/uploads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -205,7 +205,7 @@ export default function DocumentationPage() {
         <section className="border-b border-sand-deep bg-forest py-10 text-cream">
           <div className="mx-auto max-w-6xl px-5 sm:px-8">
             <span className="inline-flex items-center gap-2 rounded-full border border-cream/30 bg-white/5 px-4 py-1.5 text-xs font-medium uppercase tracking-[0.2em]">
-              <Camera size={13} /> Documentation Team
+              <Camera size={13} /> Uploads Team
             </span>
             <h1 className="mt-3 font-display text-2xl font-semibold sm:text-3xl">Add a finished piece</h1>
             <p className="mt-1 max-w-xl text-sm text-cream/70">
@@ -249,7 +249,7 @@ export default function DocumentationPage() {
                     setDragOver(false);
                     handleFile(e.dataTransfer.files?.[0]);
                   }}
-                  className={`relative flex aspect-[16/9] w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border-2 border-dashed bg-sand/40 transition-colors ${
+                  className={`relative flex h-40 w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border-2 border-dashed bg-sand/40 transition-colors ${
                     dragOver ? "border-clay bg-clay/5" : "border-sand-deep"
                   }`}
                 >

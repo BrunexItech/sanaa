@@ -29,7 +29,7 @@ const STORAGE_KEY = "sanaa.demo.session";
 const DEMO_ACCOUNT = {
   email: "demo@ushanga.africa",
   password: "UshangaDemo2026",
-  name: "Amina Hassan",
+  name: "H.E. William Ruto",
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const sessionUser: DemoUser = {
         name: DEMO_ACCOUNT.name,
         email: DEMO_ACCOUNT.email,
-        avatarInitials: "AH",
+        avatarInitials: "WR",
       };
       setUser(sessionUser);
       try {
