@@ -21,9 +21,14 @@ generic e-commerce demo, but the operating system connecting three things:
    colourway/pattern") has been removed; AI prompting is now the only way
    to create a custom design.
 3. **Production** — every order (catalogue or custom) becomes a real,
-   trackable work order routed to a named artisan at the Sekenani studio,
-   with a visible status pipeline (Confirmed → In Production → Quality Check
-   → Ready → Completed) and a shareable customer tracking link.
+   trackable work order. It first lands on a staff **Incoming Orders** desk
+   (`/incoming-orders`) for acceptance, then moves through a visible status
+   pipeline on `/production` (In Production → Quality Check → Ready →
+   Completed), and the customer gets a shareable, live-updating tracking
+   link (`/orders/[reference]`).
+4. **Cataloguing** — a documentation team can photograph a finished piece
+   and publish it straight to the live marketplace via `/documentation`
+   (no QA gate yet — publish is immediate).
 
 This was commissioned as a **national-standard government/investor pitch
 prototype** — it will be demoed live to a Kenyan Permanent Secretary (Culture)
@@ -37,10 +42,11 @@ From the client's own blueprint (not invented by me), the full vision is an
 
 - Artisans get unique IDs and belong to **artisan groups** by specialisation
   (not yet built — flagged below).
-- A **documentation team** photographs finished products and submits them.
+- A **documentation team** photographs finished products and submits them
+  (built — `/documentation` — but publishes immediately, no QA gate yet).
 - A **QA team** inspects quality, sets the approved selling price, and
   publishes to the marketplace — products should NOT go live unreviewed
-  (not yet built — right now products are seeded directly as published).
+  (not yet built — `/documentation` publishes straight to live).
 - **Sales are attributed** back to the specific artisan(s) who made the
   piece, with earnings tracked separately from the customer price (not yet
   built).
@@ -69,12 +75,34 @@ Server uses **`docker-compose`** (hyphenated, not the `docker compose` plugin).
 # locally
 cd /home/bruno-sharrix/Downloads/sanaa && git add -A && git commit -m "..." && git push
 
-# on the server
-cd ~/sanaa && git pull
+# on the server, one command at a time
+cd ~/sanaa
+git pull
 docker-compose build app
 docker-compose up -d
 docker-compose logs app --tail 40   # confirm migrations applied + "Ready"
 ```
+
+**If the live site still shows old content after this** (confirmed by
+checking `curl http://127.0.0.1:8093/<page>` directly on the server, not
+through Cloudflare — rules out CDN caching): verify `git log -1 --oneline`
+on the server matches the latest commit, and that the relevant source file
+on disk actually has the new text (`grep` for a distinctive string in it).
+If both check out but the container still serves the old page, the Docker
+build cache is the suspect — force a clean rebuild:
+
+```bash
+docker-compose build --no-cache app
+docker-compose up -d
+sleep 3
+curl -s http://127.0.0.1:8093/<page> | grep "<distinctive new text>"
+```
+
+Note the running container does **not** contain `src/` (the multi-stage
+Dockerfile's runner stage only copies `.next`, `public`, `node_modules`,
+`prisma`, and `src/generated` — see `Dockerfile`), so
+`docker-compose exec app grep ... src/...` will always 404 with "No such
+file or directory" even on a correct deploy; that's expected, not a bug.
 
 Postgres on the server is a separate container (`docker-compose.yml`), data
 persists in a named volume. GitHub repo: `github.com/BrunexItech/sanaa`
@@ -108,22 +136,51 @@ statement, you may need to manually `DROP TYPE "X";` before retrying.
   Commons, cropped to remove any people — client was explicit: catalogue
   images must show the *product*, not a person) across 7 categories
 - **Real AI custom-design generation** (`/design`) — customer picks a piece
-  type + size, describes it in free text, and `POST /api/designs/generate`
-  calls OpenAI (`gpt-image-2.5-sunburst`, same convention as the client's
-  other project `tolkyn`) to produce an actual product-photo-style concept
-  image, stored as a `CustomDesign` row (`source: AI_PROMPT`) with a
-  computed bespoke price (base item price × 1.2). UI shows a live circular
-  percentage progress ring during the 15–20s generation (eased toward 92%,
-  only hits 100% when the real image lands), then a large polished result
-  card with "Try another" / "Checkout" actions. Verified end-to-end against
-  the real OpenAI account, both locally and in production: real image
-  generated, fetched back via `/api/designs/[id]`, and a full order placed
-  against it through `/api/orders`. Checkout page renders the AI photo
-  directly (not the old abstract SVG bead preview, which only applies to
-  legacy preset-era designs still in the DB).
-- Real order → production pipeline: `POST /api/orders` creates a DB order,
-  `/orders/[reference]` is a live trackable status page, `/production` is the
-  staff dashboard that advances orders through stages
+  via an icon-based category tile grid (Necklace, Bracelet, Belt, Earrings,
+  Bag Strap), picks a size, describes it in free text, and
+  `POST /api/designs/generate` calls OpenAI (`gpt-image-2.5-sunburst`, same
+  convention as the client's other project `tolkyn`) to produce an actual
+  product-photo-style concept image, stored as a `CustomDesign` row
+  (`source: AI_PROMPT`) with a computed bespoke price (base item price ×
+  1.2). The old preset configurator (pick a colourway/pattern, no AI) has
+  been **removed entirely** — AI prompting is the only path now. UI shows a
+  live circular percentage progress ring during the 15–20s generation
+  (eased toward 92%, only hits 100% when the real image lands), a large
+  "design in progress" stage, a trust-badge row (artisan review, delivery
+  timeline, cooperative impact), and a price + "Add to Cart & Checkout" bar.
+  Deliberately does **not** include a "see it on you" model-wearing photo —
+  that needs fabricated AI human photography, which conflicts with the
+  no-fabricated-people rule below. Verified end-to-end against the real
+  OpenAI account, both locally and in production, including a scripted
+  Playwright run confirming the desktop and mobile layouts render correctly
+  with a real generated image. Checkout page renders the AI photo directly
+  (not the old abstract SVG bead preview, which only applies to legacy
+  preset-era designs still in the DB).
+- Real order → production pipeline, now in two stages:
+  - `/incoming-orders` — newly confirmed orders (not yet accepted by staff),
+    auto-polls every 8s, shows a toast + chime + "New" badge the instant an
+    order arrives, product/AI-design thumbnail shown inline. "Accept into
+    production" moves it to the next stage.
+  - `/production` — accepted orders only, also auto-polling, advances
+    In Production → Quality Check → Ready → Completed.
+  - `/orders/[reference]` — customer-facing live tracking page, polls every 8s.
+  - All three verified end-to-end via real API calls: order created →
+    appears in incoming-orders → accepted → appears in production →
+    disappears from incoming-orders.
+- **Documentation / catalogue publishing** (`/documentation`) — staff upload
+  a photo + name + category + price + artisan (materials/dimensions/
+  description/days are optional, collapsed by default — kept deliberately
+  short per client feedback that the form had too many required fields for
+  a live demo). Publish creates a real `Product` row, live on the
+  marketplace immediately. Verified by publishing a test product and
+  confirming it appeared in `/api/products` and its `/product/[id]` page.
+- **`/staff`** — a single hub linking all four staff tools (incoming orders,
+  production, documentation, exhibition QR). Gated by a lightweight
+  client-side-only sign-in (`/staff/login` — name + role, stored in
+  `localStorage`, no password). This is **not real auth/RBAC** — it exists
+  only so staff actions are attributed to a name in the activity log and the
+  demo looks intentional, not so anyone is actually locked out. Real RBAC is
+  still on the not-built list below.
 - Simulated M-Pesa/card checkout UX (intentionally simulated — no real
   payment provider wired, by design, pending client decision)
 - Exhibition QR system: `/admin/qr` generates real scannable QR codes tied to
@@ -136,16 +193,15 @@ statement, you may need to manually `DROP TYPE "X";` before retrying.
 
 - **Artisan groups, unique IDs, multi-artisan contribution/earnings
   attribution** — biggest structural gap vs. the client's blueprint
-- **Documentation-team upload UI + QA approval gate before publish** —
-  products currently skip straight to published
-- **Role-based access control** — `/production` and `/admin/qr` have no auth
-  gate at all right now; anyone with the URL can reach them
+- **QA approval gate before publish** — `/documentation` publishes a new
+  product immediately, live, with no review step
+- **Real role-based access control** — the `/staff/login` name+role picker is
+  client-side only (`localStorage`, no password, no server-side check);
+  anyone with the URL can still reach every staff screen. Real RBAC with
+  actual auth is still not built.
 - **Real payment integration** (M-Pesa/card are simulated UX only)
-- **Documentation-team → AI-design feasibility loop** — client's longer-term
-  vision has documentation staff upload real product photos (separate from
-  the AI concept flow), which notify the catalogue/public market; AI-prompt
-  designs are the "can't find it" path alongside that, not a replacement for
-  real photographed catalogue items. Only the AI-prompt half is built.
+- **"See it on you" model-wearing preview** on `/design` — explicitly
+  skipped, see above
 - No automated tests exist
 
 ## Client communication patterns worth knowing
@@ -168,17 +224,25 @@ statement, you may need to manually `DROP TYPE "X";` before retrying.
 
 ## Immediate next step (as of this handoff)
 
-AI design generation is done, deployed, and verified live. The next pieces
-from the client's full vision, not yet started:
+AI design generation (with its richer tile-based UI), the Incoming
+Orders → Production pipeline, the Documentation photo-upload-to-catalogue
+flow, and a lightweight staff sign-in are all done, deployed, and verified
+live. **Currently mid-deploy**: the last push (commit introducing the
+redesigned `/design` page) was showing stale content on the live server
+even after `git pull` + `docker-compose build app` + `up -d` — confirmed via
+direct `curl` to the container (bypassing Cloudflare) and confirmed the
+source file on disk was correct, so the Docker build cache was the likely
+culprit. Was about to run `docker-compose build --no-cache app` to force a
+clean rebuild when this handoff was written — **verify that resolved it
+first**, and if not, dig further into why Docker's layer cache didn't
+invalidate on a changed `COPY . .` source file.
 
-1. **Documentation-team photo upload UI** — staff-facing screens for
-   uploading real finished-product photos, which should notify the
-   catalogue/public market on publish (distinct from the AI-prompt flow).
-2. **QA approval gate** — products currently go live unreviewed; need an
-   approve/reject step before anything hits the public marketplace.
-3. **"Incoming Orders" staff screen** — a dedicated intake view for staff to
-   see new orders (both catalogue and AI-prompt custom designs) and hand
-   them to production, distinct from the existing `/production` tracker.
-4. **Artisan groups/unique IDs + earnings attribution**, **RBAC** on
-   `/production` and `/admin/qr`, and **real payment integration** — all
-   still open from before.
+Next pieces from the client's full vision, not yet started:
+
+1. **QA approval gate** — `/documentation` publishes immediately; needs a
+   review/approve step before a new product goes live.
+2. **Real RBAC** — replace the client-side-only `/staff/login` name+role
+   picker with actual server-side auth, so staff screens are genuinely
+   gated, not just self-reported.
+3. **Artisan groups/unique IDs + earnings attribution**, and **real payment
+   integration** — both still open from before.
