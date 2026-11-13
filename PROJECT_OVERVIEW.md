@@ -13,11 +13,13 @@ generic e-commerce demo, but the operating system connecting three things:
 1. **Marketing / global commerce** — a premium marketplace selling real
    Kenyan artisan beadwork (necklaces, bracelets, belts, earrings, bags,
    wood/soapstone carvings) to local and international buyers.
-2. **Custom design** — buyers who don't see what they want can design a
-   custom piece (currently a deterministic preset configurator; **real AI
-   image generation via OpenAI is being wired in right now** so people can
-   type a prompt like "a red and gold beaded belt" and get an actual
-   generated design).
+2. **Custom design** — buyers who don't see what they want describe a
+   custom piece in their own words on `/design` (e.g. "a red and gold
+   beaded belt with a brass buckle") and get a **real AI-generated concept
+   image** back via OpenAI — this is live and working in production, not
+   simulated. The old deterministic preset configurator ("pick a
+   colourway/pattern") has been removed; AI prompting is now the only way
+   to create a custom design.
 3. **Production** — every order (catalogue or custom) becomes a real,
    trackable work order routed to a named artisan at the Sekenani studio,
    with a visible status pipeline (Confirmed → In Production → Quality Check
@@ -61,15 +63,41 @@ From the client's own blueprint (not invented by me), the full vision is an
 
 ## Deploy loop (already working, used repeatedly this session)
 
+Server uses **`docker-compose`** (hyphenated, not the `docker compose` plugin).
+
 ```bash
 # locally
 cd /home/bruno-sharrix/Downloads/sanaa && git add -A && git commit -m "..." && git push
 
 # on the server
-cd ~/sanaa && git pull && docker-compose up -d --build app
-docker-compose exec app npx tsx prisma/seed.ts   # re-seed catalogue after schema/data changes
+cd ~/sanaa && git pull
+docker-compose build app
+docker-compose up -d
+docker-compose logs app --tail 40   # confirm migrations applied + "Ready"
 ```
-Postgres on the server is a separate container (`docker-compose.yml`), data persists in a named volume. GitHub repo: `github.com/BrunexItech/sanaa` (public).
+
+Postgres on the server is a separate container (`docker-compose.yml`), data
+persists in a named volume. GitHub repo: `github.com/BrunexItech/sanaa`
+(public). Live at **`https://ushanga.oqtekal.com`**, app container bound to
+`127.0.0.1:8093`, postgres to `127.0.0.1:5438` — both **remapped directly on
+the server, not committed to git**, to avoid port clashes with other
+projects sharing that VPS. If you ever edit `docker-compose.yml` locally and
+push, expect `git pull` on the server to conflict with those uncommitted
+port lines — resolve in favour of keeping the server's port mapping.
+
+New `OPENAI_API_KEY` / `OPENAI_IMAGE_MODEL` env vars are injected into the
+`app` service via `${VAR}` substitution in `docker-compose.yml`, sourced
+from a server-local `.env` file (not in git) sitting next to it.
+
+**Gotcha hit once already**: if a Prisma migration adds a required column
+to a table with existing rows, `migrate deploy` fails with P3018 inside the
+container and the app container exits (command is
+`migrate deploy && npm run start`, so a failed migration means no server).
+Fix: `docker-compose run --rm app npx prisma migrate resolve --rolled-back <name>`,
+clear/fix the blocking rows via `docker-compose exec postgres psql -U ushanga -d ushanga -c "..."`,
+then `docker-compose up -d` again. If a prior failed attempt partially
+applied DDL (e.g. created an enum type) before failing on a later
+statement, you may need to manually `DROP TYPE "X";` before retrying.
 
 ## What's built and working (verified end-to-end, not just "looks right")
 
@@ -79,7 +107,20 @@ Postgres on the server is a separate container (`docker-compose.yml`), data pers
 - Real catalogue: **10 real, product-only photos** (sourced from Wikimedia
   Commons, cropped to remove any people — client was explicit: catalogue
   images must show the *product*, not a person) across 7 categories
-- Guided custom-design configurator (`/design`) — deterministic, not AI yet
+- **Real AI custom-design generation** (`/design`) — customer picks a piece
+  type + size, describes it in free text, and `POST /api/designs/generate`
+  calls OpenAI (`gpt-image-2.5-sunburst`, same convention as the client's
+  other project `tolkyn`) to produce an actual product-photo-style concept
+  image, stored as a `CustomDesign` row (`source: AI_PROMPT`) with a
+  computed bespoke price (base item price × 1.2). UI shows a live circular
+  percentage progress ring during the 15–20s generation (eased toward 92%,
+  only hits 100% when the real image lands), then a large polished result
+  card with "Try another" / "Checkout" actions. Verified end-to-end against
+  the real OpenAI account, both locally and in production: real image
+  generated, fetched back via `/api/designs/[id]`, and a full order placed
+  against it through `/api/orders`. Checkout page renders the AI photo
+  directly (not the old abstract SVG bead preview, which only applies to
+  legacy preset-era designs still in the DB).
 - Real order → production pipeline: `POST /api/orders` creates a DB order,
   `/orders/[reference]` is a live trackable status page, `/production` is the
   staff dashboard that advances orders through stages
@@ -99,15 +140,12 @@ Postgres on the server is a separate container (`docker-compose.yml`), data pers
   products currently skip straight to published
 - **Role-based access control** — `/production` and `/admin/qr` have no auth
   gate at all right now; anyone with the URL can reach them
-- **Real AI image generation** — in progress as of this handoff. Client
-  wants: user types a prompt describing a piece (e.g. "a beaded bracelet
-  with ocean colours"), OpenAI generates an actual image, they confirm, it
-  becomes a real order. Client uses OpenAI in their other project (`tolkyn`)
-  with models `gpt-image-2.5-sunburst` (quality) / `gpt-image-2.5-flare`
-  (fast draft) — same convention should be used here for consistency. The
-  `OPENAI_API_KEY` env var slot already exists in `.env` (not committed);
-  client was about to paste their key in when this handoff was written.
 - **Real payment integration** (M-Pesa/card are simulated UX only)
+- **Documentation-team → AI-design feasibility loop** — client's longer-term
+  vision has documentation staff upload real product photos (separate from
+  the AI concept flow), which notify the catalogue/public market; AI-prompt
+  designs are the "can't find it" path alongside that, not a replacement for
+  real photographed catalogue items. Only the AI-prompt half is built.
 - No automated tests exist
 
 ## Client communication patterns worth knowing
@@ -130,9 +168,17 @@ Postgres on the server is a separate container (`docker-compose.yml`), data pers
 
 ## Immediate next step (as of this handoff)
 
-Build `POST /api/designs/generate` (calls OpenAI image API using the prompt
-+ selected item type, constrained to stay on-brand — authentic Kenyan
-beadwork style, no people, product-photography framing), add a "Describe
-your design" mode alongside the existing preset configurator on `/design`,
-and wire the generated result into the same `CustomDesign` → `Order` →
-production pipeline that already exists.
+AI design generation is done, deployed, and verified live. The next pieces
+from the client's full vision, not yet started:
+
+1. **Documentation-team photo upload UI** — staff-facing screens for
+   uploading real finished-product photos, which should notify the
+   catalogue/public market on publish (distinct from the AI-prompt flow).
+2. **QA approval gate** — products currently go live unreviewed; need an
+   approve/reject step before anything hits the public marketplace.
+3. **"Incoming Orders" staff screen** — a dedicated intake view for staff to
+   see new orders (both catalogue and AI-prompt custom designs) and hand
+   them to production, distinct from the existing `/production` tracker.
+4. **Artisan groups/unique IDs + earnings attribution**, **RBAC** on
+   `/production` and `/admin/qr`, and **real payment integration** — all
+   still open from before.
