@@ -173,8 +173,28 @@ export default function OrderStatusPage({ params }: { params: Promise<{ referenc
                 </Link>
               </div>
 
-              {/* ---------- Right: maker story + QR ---------- */}
+              {/* ---------- Right: QR first, then the maker's story ---------- */}
               <div className="flex flex-col gap-6">
+                <div className="rounded-3xl border border-sand-deep bg-white p-6 text-center">
+                  <p className="flex items-center justify-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-ink-muted">
+                    <QrCode size={13} /> Scan for her story
+                  </p>
+                  <div className="mx-auto mt-4 w-fit overflow-hidden rounded-2xl border border-sand-deep p-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`/api/orders/${order.reference}/qr`}
+                      alt={`QR code for order ${order.reference}`}
+                      width={160}
+                      height={160}
+                      className="h-40 w-40"
+                    />
+                  </div>
+                  <p className="mt-3 font-display text-sm font-semibold text-charcoal">{order.reference}</p>
+                  <p className="mt-2 text-[11px] leading-relaxed text-ink-muted">
+                    Scan to see exactly who made this piece — her name, her cooperative, and her story.
+                  </p>
+                </div>
+
                 {order.artisan && (
                   <div className="overflow-hidden rounded-3xl border border-sand-deep bg-white">
                     <div className="relative h-40 w-full">
@@ -203,26 +223,6 @@ export default function OrderStatusPage({ params }: { params: Promise<{ referenc
                     </div>
                   </div>
                 )}
-
-                <div className="rounded-3xl border border-sand-deep bg-white p-6 text-center">
-                  <p className="flex items-center justify-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-ink-muted">
-                    <QrCode size={13} /> Scan to revisit
-                  </p>
-                  <div className="mx-auto mt-4 w-fit overflow-hidden rounded-2xl border border-sand-deep p-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={`/api/orders/${order.reference}/qr`}
-                      alt={`QR code for order ${order.reference}`}
-                      width={160}
-                      height={160}
-                      className="h-40 w-40"
-                    />
-                  </div>
-                  <p className="mt-3 font-display text-sm font-semibold text-charcoal">{order.reference}</p>
-                  <p className="mt-2 text-[11px] leading-relaxed text-ink-muted">
-                    Opens this page — order status and the maker&apos;s story — on any device.
-                  </p>
-                </div>
               </div>
             </div>
           )}
