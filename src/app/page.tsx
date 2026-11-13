@@ -24,7 +24,7 @@ export const dynamic = "force-dynamic";
 export default async function Home() {
   const dbProducts = await prisma.product.findMany({
     include: { artisan: true },
-    orderBy: { createdAt: "asc" },
+    orderBy: { createdAt: "desc" },
     take: 8,
   });
   const spotlightArtisan = await prisma.artisan.findFirst({ where: { active: true } });
