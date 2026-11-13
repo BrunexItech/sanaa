@@ -45,9 +45,17 @@ const PROMPT_IDEAS = [
   "Delicate turquoise and silver drop earrings with a sunburst motif",
 ];
 
-// Real-world generation takes ~15-20s. This simulates a smooth, honest
-// progress climb (never claiming 100% until the API actually responds)
-// so the wait feels alive instead of a frozen spinner.
+// Real-world generation takes ~15-20s, sometimes longer. This simulates a
+// smooth, honest progress climb (never claiming 100% until the API actually
+// responds) so the wait feels alive instead of a frozen spinner. Approaching
+// a ceiling asymptotically — rather than racing to a hard cap like 92% and
+// then freezing dead there — means it keeps crawling forward for however
+// long the real request actually takes, instead of looking stuck if
+// generation runs past the estimate (which happens often).
+const PROGRESS_CEILING = 97;
+function asymptoticProgress(elapsedMs: number, estimatedMs: number) {
+  return PROGRESS_CEILING * (1 - Math.exp(-elapsedMs / estimatedMs));
+}
 const ESTIMATED_MS = 17000;
 const DRESS_ESTIMATED_MS = 12000;
 
@@ -96,8 +104,7 @@ export default function DesignPage() {
     const startedAt = Date.now();
     dressProgressTimer.current = setInterval(() => {
       const elapsed = Date.now() - startedAt;
-      const target = Math.min(92, Math.round((elapsed / DRESS_ESTIMATED_MS) * 92));
-      setDressProgress((p) => (target > p ? target : p + (p < 92 ? 0.6 : 0)));
+      setDressProgress(asymptoticProgress(elapsed, DRESS_ESTIMATED_MS));
     }, 180);
 
     try {
@@ -142,8 +149,7 @@ export default function DesignPage() {
     const startedAt = Date.now();
     progressTimer.current = setInterval(() => {
       const elapsed = Date.now() - startedAt;
-      const target = Math.min(92, Math.round((elapsed / ESTIMATED_MS) * 92));
-      setProgress((p) => (target > p ? target : p + (p < 92 ? 0.4 : 0)));
+      setProgress(asymptoticProgress(elapsed, ESTIMATED_MS));
     }, 180);
 
     try {
