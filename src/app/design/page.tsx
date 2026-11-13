@@ -1,427 +1,337 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
-import { ArrowRight, Gem, Check, Sparkle, Wand2, RefreshCcw } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowRight, Sparkles, Wand2, RefreshCcw, ShieldCheck, Clock, Gem } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Spinner } from "@/components/Spinner";
-import { BeadPreview } from "@/components/BeadPreview";
 import {
   ITEM_TYPES,
-  COLORWAYS,
-  PATTERNS,
   SIZES,
-  computeDesignPriceCents,
   computeAiDesignPriceCents,
   formatKES,
   type ItemTypeId,
-  type ColorwayId,
-  type PatternId,
 } from "@/lib/configurator";
 
-type Mode = "preset" | "ai";
+const PROMPT_IDEAS = [
+  "A bold red, black and white diamond-pattern beaded belt with a brass buckle",
+  "A deep indigo and gold beaded collar necklace, Maasai style",
+  "Delicate turquoise and silver drop earrings with a sunburst motif",
+];
+
+// Real-world generation takes ~15-20s. This simulates a smooth, honest
+// progress climb (never claiming 100% until the API actually responds)
+// so the wait feels alive instead of a frozen spinner.
+const ESTIMATED_MS = 17000;
 
 export default function DesignPage() {
   const router = useRouter();
-  const [mode, setMode] = useState<Mode>("preset");
 
-  // ---- Preset configurator state ----
   const [itemType, setItemType] = useState<ItemTypeId>(ITEM_TYPES[0].id);
-  const [colorway, setColorway] = useState<ColorwayId>(COLORWAYS[0].id);
-  const [pattern, setPattern] = useState<PatternId>(PATTERNS[0].id);
   const [size, setSize] = useState<(typeof SIZES)[number]>("M");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // ---- AI prompt state ----
-  const [aiItemType, setAiItemType] = useState<ItemTypeId>(ITEM_TYPES[0].id);
-  const [aiSize, setAiSize] = useState<(typeof SIZES)[number]>("M");
   const [prompt, setPrompt] = useState("");
   const [generating, setGenerating] = useState(false);
-  const [aiError, setAiError] = useState<string | null>(null);
-  const [aiResult, setAiResult] = useState<{ id: string; aiImageUrl: string; priceCents: number } | null>(null);
-  const [confirmingAi, setConfirmingAi] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<{ id: string; aiImageUrl: string; priceCents: number; prompt: string } | null>(null);
+  const [confirming, setConfirming] = useState(false);
 
-  const priceCents = useMemo(() => computeDesignPriceCents(itemType, pattern) ?? 0, [itemType, pattern]);
+  const progressTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const selectedItem = ITEM_TYPES.find((i) => i.id === itemType)!;
-  const selectedColorway = COLORWAYS.find((c) => c.id === colorway)!;
-  const selectedPattern = PATTERNS.find((p) => p.id === pattern)!;
+  const priceCents = useMemo(() => computeAiDesignPriceCents(itemType) ?? 0, [itemType]);
 
-  const aiSelectedItem = ITEM_TYPES.find((i) => i.id === aiItemType)!;
-  const aiPriceCents = useMemo(() => computeAiDesignPriceCents(aiItemType) ?? 0, [aiItemType]);
-
-  async function handleConfirm() {
-    setSaving(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/designs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ itemType, colorway, patternStyle: pattern, size }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Could not save design.");
-      router.push(`/checkout?source=CUSTOM_DESIGN&designId=${data.design.id}`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
-      setSaving(false);
-    }
-  }
+  useEffect(() => {
+    return () => {
+      if (progressTimer.current) clearInterval(progressTimer.current);
+    };
+  }, []);
 
   async function handleGenerate() {
-    if (!prompt.trim()) return;
+    if (!prompt.trim() || generating) return;
     setGenerating(true);
-    setAiError(null);
-    setAiResult(null);
+    setError(null);
+    setResult(null);
+    setProgress(2);
+
+    const startedAt = Date.now();
+    progressTimer.current = setInterval(() => {
+      const elapsed = Date.now() - startedAt;
+      // Ease toward 92% over the estimated duration, then creep slowly —
+      // never claim done until the response actually lands.
+      const target = Math.min(92, Math.round((elapsed / ESTIMATED_MS) * 92));
+      setProgress((p) => (target > p ? target : p + (p < 92 ? 0.4 : 0)));
+    }, 180);
+
     try {
       const res = await fetch("/api/designs/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ itemType: aiItemType, size: aiSize, prompt: prompt.trim() }),
+        body: JSON.stringify({ itemType, size, prompt: prompt.trim() }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Could not generate that design.");
-      setAiResult({
+
+      if (progressTimer.current) clearInterval(progressTimer.current);
+      setProgress(100);
+      await new Promise((r) => setTimeout(r, 350));
+
+      setResult({
         id: data.design.id,
         aiImageUrl: data.design.aiImageUrl,
         priceCents: data.design.priceCents,
+        prompt: prompt.trim(),
       });
     } catch (e) {
-      setAiError(e instanceof Error ? e.message : "Something went wrong.");
+      if (progressTimer.current) clearInterval(progressTimer.current);
+      setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
     } finally {
       setGenerating(false);
+      setProgress(0);
     }
   }
 
-  function handleConfirmAi() {
-    if (!aiResult) return;
-    setConfirmingAi(true);
-    router.push(`/checkout?source=CUSTOM_DESIGN&designId=${aiResult.id}`);
+  function handleTryAgain() {
+    setResult(null);
+    setError(null);
+  }
+
+  function handleCheckout() {
+    if (!result) return;
+    setConfirming(true);
+    router.push(`/checkout?source=CUSTOM_DESIGN&designId=${result.id}`);
   }
 
   return (
     <>
       <Header />
-      <main className="flex-1 overflow-hidden bg-onyx">
-        <div className="grid lg:h-[calc(100svh-67px)] lg:grid-cols-[1.1fr_1fr]">
-          {/* ---------- Mirror stage ---------- */}
-          <div className="relative flex min-h-[340px] flex-col justify-between overflow-hidden border-b border-gold/10 bg-onyx p-5 lg:min-h-0 lg:border-b-0 lg:border-r lg:p-8">
-            <div
-              className="pointer-events-none absolute inset-0"
-              style={{
-                background:
-                  "radial-gradient(circle at 30% 20%, rgba(198,138,46,0.18), transparent 55%), radial-gradient(circle at 75% 80%, rgba(47,74,58,0.25), transparent 50%)",
-              }}
-            />
-            <div className="relative z-10 flex items-center justify-between">
-              <span className="inline-flex items-center gap-2 rounded-full border border-gold-soft/40 bg-white/5 px-3.5 py-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-gold-soft backdrop-blur-sm">
-                <Gem size={12} /> Ushanga Design Studio
-              </span>
-              <span className="hidden text-xs text-cream/50 sm:block">Live preview</span>
-            </div>
+      <main className="flex-1 bg-onyx">
+        <div className="mx-auto flex min-h-[calc(100svh-67px)] max-w-6xl flex-col gap-8 px-5 py-8 sm:px-8 lg:flex-row lg:items-center lg:gap-12 lg:py-10">
+          {/* ---------- Showcase / stage ---------- */}
+          <div className="flex w-full flex-col items-center lg:w-[46%]">
+            <div className="relative aspect-square w-full max-w-md overflow-hidden rounded-3xl border border-gold-soft/20 bg-gradient-to-br from-white/[0.04] to-transparent shadow-2xl shadow-black/40">
+              <div
+                className="pointer-events-none absolute inset-0"
+                style={{
+                  background:
+                    "radial-gradient(circle at 25% 15%, rgba(198,138,46,0.16), transparent 55%), radial-gradient(circle at 80% 85%, rgba(47,74,58,0.22), transparent 50%)",
+                }}
+              />
 
-            <div className="relative z-10 flex flex-1 items-center justify-center py-4">
-              {mode === "preset" ? (
-                <div className="w-full max-w-xs lg:max-w-sm">
-                  <BeadPreview colorwayId={colorway} patternId={pattern} itemTypeId={itemType} />
+              {generating ? (
+                <div className="relative z-10 flex h-full flex-col items-center justify-center gap-5 px-8 text-center">
+                  <div className="relative flex h-20 w-20 items-center justify-center">
+                    <svg className="h-20 w-20 -rotate-90" viewBox="0 0 80 80">
+                      <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="5" />
+                      <circle
+                        cx="40"
+                        cy="40"
+                        r="34"
+                        fill="none"
+                        stroke="#C68A2E"
+                        strokeWidth="5"
+                        strokeLinecap="round"
+                        strokeDasharray={2 * Math.PI * 34}
+                        strokeDashoffset={2 * Math.PI * 34 * (1 - progress / 100)}
+                        style={{ transition: "stroke-dashoffset 180ms linear" }}
+                      />
+                    </svg>
+                    <span className="absolute font-display text-base font-semibold text-cream">
+                      {Math.round(progress)}%
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-cream">Crafting your concept…</p>
+                    <p className="mt-1 text-xs text-cream/50">
+                      Usually takes 15–20 seconds. Worth the wait.
+                    </p>
+                  </div>
                 </div>
+              ) : result ? (
+                <img
+                  src={result.aiImageUrl}
+                  alt={result.prompt}
+                  className="relative z-10 h-full w-full object-cover"
+                />
               ) : (
-                <div className="flex w-full max-w-xs flex-col items-center gap-3 lg:max-w-sm">
-                  {generating ? (
-                    <div className="flex aspect-square w-full flex-col items-center justify-center gap-3 rounded-2xl border border-gold-soft/25 bg-white/5">
-                      <Spinner size={22} />
-                      <p className="px-6 text-center text-xs text-cream/60">
-                        Generating your concept piece…
-                      </p>
-                    </div>
-                  ) : aiResult ? (
-                    <img
-                      src={aiResult.aiImageUrl}
-                      alt="AI-generated design concept"
-                      className="aspect-square w-full rounded-2xl border border-gold-soft/25 object-cover shadow-xl shadow-black/40"
-                    />
-                  ) : (
-                    <div className="flex aspect-square w-full flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-gold-soft/25 bg-white/[0.03] px-6 text-center">
-                      <Wand2 size={22} className="text-gold-soft/70" />
-                      <p className="text-xs text-cream/50">
-                        Describe what you want on the right — your concept will appear here.
-                      </p>
-                    </div>
-                  )}
+                <div className="relative z-10 flex h-full flex-col items-center justify-center gap-4 px-10 text-center">
+                  <span className="flex h-14 w-14 items-center justify-center rounded-full border border-gold-soft/30 bg-white/5">
+                    <Sparkles size={22} className="text-gold-soft" />
+                  </span>
+                  <p className="text-sm font-medium text-cream/80">Your design will appear here</p>
+                  <p className="text-xs text-cream/45">
+                    Pick a piece, describe it below, and watch it come to life.
+                  </p>
                 </div>
               )}
             </div>
 
-            <div className="relative z-10">
-              <h1 className="font-display text-xl font-semibold text-cream sm:text-2xl">
-                {mode === "preset"
-                  ? "Design it. We’ll bead it, by hand."
-                  : "Describe it. We’ll make it real."}
-              </h1>
-              <p className="mt-1.5 max-w-md text-xs text-cream/70 sm:text-sm">
-                {mode === "preset"
-                  ? "Every combination is real and producible — routed straight to an artisan at the Sekenani studio."
-                  : "AI sketches the concept from your words; a Sekenani artisan reviews and hand-beads the real piece."}
-              </p>
+            {result && (
+              <div className="mt-4 w-full max-w-md rounded-2xl border border-gold-soft/15 bg-white/[0.03] px-4 py-3">
+                <p className="text-[10px] uppercase tracking-wide text-cream/40">Your prompt</p>
+                <p className="mt-0.5 text-xs text-cream/75">&ldquo;{result.prompt}&rdquo;</p>
+              </div>
+            )}
+
+            <div className="mt-5 hidden w-full max-w-md items-center justify-center gap-5 text-[11px] text-cream/45 lg:flex">
+              <span className="flex items-center gap-1.5">
+                <ShieldCheck size={13} className="text-gold-soft/70" /> Reviewed by an artisan
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Clock size={13} className="text-gold-soft/70" /> {selectedItem.days}-day production
+              </span>
             </div>
           </div>
 
-          {/* ---------- Configurator ---------- */}
-          <div className="flex flex-col justify-center overflow-y-auto bg-cream px-5 py-6 sm:px-8 lg:px-10">
-            <div className="mx-auto flex w-full max-w-xl flex-col gap-5">
-              <div className="flex gap-2 rounded-full border border-sand-deep bg-white p-1">
-                <button
-                  onClick={() => setMode("preset")}
-                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-full py-2 text-xs font-semibold transition-all ${
-                    mode === "preset" ? "bg-gold text-onyx shadow" : "text-ink-muted hover:text-charcoal"
-                  }`}
-                >
-                  <Gem size={13} /> Pick a style
-                </button>
-                <button
-                  onClick={() => setMode("ai")}
-                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-full py-2 text-xs font-semibold transition-all ${
-                    mode === "ai" ? "bg-gold text-onyx shadow" : "text-ink-muted hover:text-charcoal"
-                  }`}
-                >
-                  <Sparkle size={13} /> Describe it (AI)
-                </button>
-              </div>
+          {/* ---------- Controls ---------- */}
+          <div className="flex w-full flex-col gap-6 lg:w-[54%]">
+            <div>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-gold-soft/30 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-gold-soft">
+                <Gem size={11} /> AI Design Studio
+              </span>
+              <h1 className="mt-3 font-display text-2xl font-semibold text-cream sm:text-3xl">
+                Describe it. We&apos;ll make it real.
+              </h1>
+              <p className="mt-2 max-w-lg text-sm text-cream/60">
+                Type what you want in your own words. AI sketches the concept —
+                a Maa artisan at Sekenani then hand-beads the real piece.
+              </p>
+            </div>
 
-              {mode === "ai" ? (
-                <>
-                  <OptionGroup label="1. Piece">
-                    <div className="flex flex-wrap gap-2">
-                      {ITEM_TYPES.map((i) => (
-                        <button
-                          key={i.id}
-                          onClick={() => setAiItemType(i.id)}
-                          className={`rounded-full border-2 px-4 py-2 text-xs font-semibold transition-all ${
-                            aiItemType === i.id
-                              ? "border-gold bg-gold/10 text-charcoal"
-                              : "border-sand-deep text-ink-muted hover:border-gold/40"
-                          }`}
-                        >
-                          {i.label}
-                        </button>
-                      ))}
-                    </div>
-                    <p className="mt-1.5 text-[11px] text-ink-muted">
-                      From {formatKES(aiSelectedItem.basePriceCents)} &middot; {aiSelectedItem.days} day production
-                    </p>
-                  </OptionGroup>
-
-                  <OptionGroup label="2. Size">
-                    <div className="flex gap-2">
-                      {SIZES.map((s) => (
-                        <button
-                          key={s}
-                          onClick={() => setAiSize(s)}
-                          className={`flex-1 rounded-full border-2 py-2 text-center text-xs font-semibold transition-all ${
-                            aiSize === s ? "border-gold bg-gold/10 text-clay-dark" : "border-sand-deep text-ink-muted"
-                          }`}
-                        >
-                          {s}
-                        </button>
-                      ))}
-                    </div>
-                  </OptionGroup>
-
-                  <OptionGroup label="3. Describe your design">
-                    <textarea
-                      value={prompt}
-                      onChange={(e) => setPrompt(e.target.value.slice(0, 400))}
-                      placeholder="e.g. A bold red, black and white diamond-pattern beaded belt with a brass buckle, Maasai style."
-                      rows={3}
-                      className="w-full resize-none rounded-xl border-2 border-sand-deep bg-white px-3.5 py-2.5 text-sm text-charcoal placeholder:text-ink-muted/60 focus:border-gold focus:outline-none"
-                    />
-                    <p className="mt-1 text-right text-[10px] text-ink-muted">{prompt.length}/400</p>
-                  </OptionGroup>
-
-                  {aiError && (
-                    <p className="rounded-lg bg-clay/10 px-3 py-2 text-xs font-medium text-clay-dark">{aiError}</p>
-                  )}
-
-                  <div className="flex items-center justify-between gap-4 border-t border-sand-deep pt-4">
-                    <div>
-                      <p className="text-[10px] uppercase tracking-wide text-ink-muted">
-                        {aiSelectedItem.label} &middot; AI concept &middot; +20% bespoke fee
-                      </p>
-                      <p className="font-display text-lg font-semibold text-clay-dark">{formatKES(aiPriceCents)}</p>
-                    </div>
-                    {!aiResult ? (
-                      <button
-                        onClick={handleGenerate}
-                        disabled={generating || !prompt.trim()}
-                        className="flex items-center gap-2 rounded-full bg-gold px-5 py-3 text-sm font-semibold text-onyx shadow-lg shadow-gold/20 transition-transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {generating ? (
-                          <>
-                            <Spinner size={15} /> Generating…
-                          </>
-                        ) : (
-                          <>
-                            <Wand2 size={14} /> Generate
-                          </>
-                        )}
-                      </button>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => setAiResult(null)}
-                          className="flex items-center gap-1.5 rounded-full border-2 border-sand-deep px-3.5 py-3 text-xs font-semibold text-ink-muted transition-colors hover:border-gold/40 hover:text-charcoal"
-                        >
-                          <RefreshCcw size={13} /> Retry
-                        </button>
-                        <button
-                          onClick={handleConfirmAi}
-                          disabled={confirmingAi}
-                          className="flex items-center gap-2 rounded-full bg-gold px-5 py-3 text-sm font-semibold text-onyx shadow-lg shadow-gold/20 transition-transform hover:scale-[1.02] disabled:opacity-80"
-                        >
-                          {confirmingAi ? (
-                            <>
-                              <Spinner size={15} /> Loading…
-                            </>
-                          ) : (
-                            <>
-                              Checkout <ArrowRight size={14} />
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </>
-              ) : (
-              <>
-              <OptionGroup label="1. Piece">
+            <div className="flex flex-col gap-5 rounded-2xl border border-gold-soft/15 bg-white/[0.03] p-5 sm:p-6">
+              <div>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-soft/80">
+                  1. What are we making?
+                </p>
                 <div className="flex flex-wrap gap-2">
                   {ITEM_TYPES.map((i) => (
                     <button
                       key={i.id}
                       onClick={() => setItemType(i.id)}
+                      disabled={generating}
                       className={`rounded-full border-2 px-4 py-2 text-xs font-semibold transition-all ${
                         itemType === i.id
-                          ? "border-gold bg-gold/10 text-charcoal"
-                          : "border-sand-deep text-ink-muted hover:border-gold/40"
+                          ? "border-gold bg-gold/15 text-cream"
+                          : "border-cream/15 text-cream/60 hover:border-gold/40"
                       }`}
                     >
                       {i.label}
                     </button>
                   ))}
                 </div>
-                <p className="mt-1.5 text-[11px] text-ink-muted">
-                  From {formatKES(selectedItem.basePriceCents)} &middot; {selectedItem.days} day production
-                </p>
-              </OptionGroup>
 
-              <OptionGroup label="2. Colourway">
-                <div className="flex flex-wrap gap-3">
-                  {COLORWAYS.map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => setColorway(c.id)}
-                      className="flex flex-col items-center gap-1"
-                    >
-                      <span
-                        className={`relative flex h-10 w-10 items-center justify-center rounded-full p-0.5 transition-all ${
-                          colorway === c.id ? "ring-2 ring-gold ring-offset-2 ring-offset-cream" : ""
+                <div className="mt-3 flex items-center gap-2">
+                  <span className="text-[11px] text-cream/40">Size</span>
+                  <div className="flex gap-1.5">
+                    {SIZES.map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => setSize(s)}
+                        disabled={generating}
+                        className={`h-7 w-7 rounded-full border-2 text-[11px] font-semibold transition-all ${
+                          size === s ? "border-gold bg-gold/15 text-cream" : "border-cream/15 text-cream/50"
                         }`}
                       >
-                        <span
-                          className="h-full w-full rounded-full"
-                          style={{ background: `conic-gradient(${c.swatch.join(", ")})` }}
-                        />
-                        {colorway === c.id && (
-                          <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-gold text-onyx">
-                            <Check size={9} />
-                          </span>
-                        )}
-                      </span>
-                      <span className={`text-[10px] font-medium ${colorway === c.id ? "text-charcoal" : "text-ink-muted"}`}>
-                        {c.label}
-                      </span>
-                    </button>
-                  ))}
+                        {s}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </OptionGroup>
+              </div>
 
-              <OptionGroup label="3. Pattern">
-                <div className="flex flex-wrap gap-2">
-                  {PATTERNS.map((p) => (
-                    <button
-                      key={p.id}
-                      onClick={() => setPattern(p.id)}
-                      className={`rounded-full border-2 px-4 py-2 text-xs font-semibold transition-all ${
-                        pattern === p.id ? "border-gold bg-gold/10 text-charcoal" : "border-sand-deep text-ink-muted hover:border-gold/40"
-                      }`}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
+              <div>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-soft/80">
+                  2. Describe your design
+                </p>
+                <textarea
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value.slice(0, 400))}
+                  placeholder={`e.g. ${PROMPT_IDEAS[0]}`}
+                  rows={3}
+                  disabled={generating}
+                  className="w-full resize-none rounded-xl border-2 border-cream/15 bg-white/5 px-3.5 py-2.5 text-sm text-cream placeholder:text-cream/30 focus:border-gold focus:outline-none disabled:opacity-60"
+                />
+                <div className="mt-1.5 flex items-center justify-between">
+                  <p className="text-[10px] text-cream/35">{prompt.length}/400</p>
                 </div>
-              </OptionGroup>
 
-              <OptionGroup label="4. Size">
-                <div className="flex gap-2">
-                  {SIZES.map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => setSize(s)}
-                      className={`flex-1 rounded-full border-2 py-2 text-center text-xs font-semibold transition-all ${
-                        size === s ? "border-gold bg-gold/10 text-clay-dark" : "border-sand-deep text-ink-muted"
-                      }`}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </OptionGroup>
+                {!result && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {PROMPT_IDEAS.map((idea) => (
+                      <button
+                        key={idea}
+                        type="button"
+                        onClick={() => setPrompt(idea)}
+                        disabled={generating}
+                        className="rounded-full border border-cream/10 bg-white/[0.03] px-3 py-1 text-[10px] text-cream/50 transition-colors hover:border-gold/30 hover:text-cream/80"
+                      >
+                        {idea.length > 42 ? idea.slice(0, 42) + "…" : idea}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               {error && (
-                <p className="rounded-lg bg-clay/10 px-3 py-2 text-xs font-medium text-clay-dark">{error}</p>
+                <p className="rounded-lg bg-clay/15 px-3 py-2 text-xs font-medium text-clay">{error}</p>
               )}
 
-              <div className="flex items-center justify-between gap-4 border-t border-sand-deep pt-4">
+              <div className="flex items-center justify-between gap-4 border-t border-cream/10 pt-5">
                 <div>
-                  <p className="text-[10px] uppercase tracking-wide text-ink-muted">
-                    {selectedItem.label} &middot; {selectedColorway.label} &middot; {selectedPattern.label}
+                  <p className="text-[10px] uppercase tracking-wide text-cream/40">
+                    {selectedItem.label} &middot; bespoke AI concept
                   </p>
-                  <p className="font-display text-lg font-semibold text-clay-dark">{formatKES(priceCents)}</p>
+                  <p className="font-display text-lg font-semibold text-cream">{formatKES(priceCents)}</p>
                 </div>
-                <button
-                  onClick={handleConfirm}
-                  disabled={saving}
-                  className="flex items-center gap-2 rounded-full bg-gold px-5 py-3 text-sm font-semibold text-onyx shadow-lg shadow-gold/20 transition-transform hover:scale-[1.02] disabled:opacity-80"
-                >
-                  {saving ? (
-                    <>
-                      <Spinner size={15} /> Saving…
-                    </>
-                  ) : (
-                    <>
-                      Checkout <ArrowRight size={14} />
-                    </>
-                  )}
-                </button>
+
+                {!result ? (
+                  <button
+                    onClick={handleGenerate}
+                    disabled={generating || !prompt.trim()}
+                    className="flex items-center gap-2 rounded-full bg-gold px-5 py-3 text-sm font-semibold text-onyx shadow-lg shadow-gold/20 transition-transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {generating ? (
+                      <>
+                        <Spinner size={15} /> {Math.round(progress)}%
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 size={14} /> Generate
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleTryAgain}
+                      className="flex items-center gap-1.5 rounded-full border-2 border-cream/15 px-3.5 py-3 text-xs font-semibold text-cream/70 transition-colors hover:border-gold/40 hover:text-cream"
+                    >
+                      <RefreshCcw size={13} /> Try another
+                    </button>
+                    <button
+                      onClick={handleCheckout}
+                      disabled={confirming}
+                      className="flex items-center gap-2 rounded-full bg-gold px-5 py-3 text-sm font-semibold text-onyx shadow-lg shadow-gold/20 transition-transform hover:scale-[1.02] disabled:opacity-80"
+                    >
+                      {confirming ? (
+                        <>
+                          <Spinner size={15} /> Loading…
+                        </>
+                      ) : (
+                        <>
+                          Checkout <ArrowRight size={14} />
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
-              </>
-              )}
             </div>
           </div>
         </div>
       </main>
       <Footer />
     </>
-  );
-}
-
-function OptionGroup({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-forest">{label}</p>
-      {children}
-    </div>
   );
 }
