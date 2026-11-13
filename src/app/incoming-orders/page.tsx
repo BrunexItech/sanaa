@@ -6,6 +6,7 @@ import { Inbox, ArrowRight, RefreshCcw, Sparkles, Gem } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Spinner } from "@/components/Spinner";
+import { ToastStack, type ToastItem } from "@/components/Toast";
 import { formatKES } from "@/lib/configurator";
 import { useStaffProfile } from "@/lib/staffAuth";
 
@@ -63,9 +64,13 @@ export default function IncomingOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState<string | null>(null);
-  const [toasts, setToasts] = useState<{ id: string; reference: string }[]>([]);
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [newIds, setNewIds] = useState<Set<string>>(new Set());
   const seenIds = useRef<Set<string> | null>(null);
+
+  function dismissToast(id: string) {
+    setToasts((t) => t.filter((x) => x.id !== id));
+  }
 
   useEffect(() => {
     if (ready && !profile) router.replace("/staff/login?next=/incoming-orders");
@@ -80,10 +85,19 @@ export default function IncomingOrdersPage() {
       const arrivals = fresh.filter((o) => !seenIds.current!.has(o.id));
       if (arrivals.length > 0) {
         playChime();
-        setToasts((t) => [...t, ...arrivals.map((o) => ({ id: o.id, reference: o.reference }))]);
+        setToasts((t) => [
+          ...t,
+          ...arrivals.map((o) => ({
+            id: o.id,
+            title: "New order just came in",
+            subtitle: `${o.customerName} · ${o.reference}`,
+            meta: formatKES(o.totalCents),
+            image: o.product?.image ?? o.customDesign?.aiImageUrl ?? undefined,
+            icon: <Inbox size={18} />,
+          })),
+        ]);
         setNewIds((s) => new Set([...s, ...arrivals.map((o) => o.id)]));
         arrivals.forEach((o) => {
-          setTimeout(() => setToasts((t) => t.filter((x) => x.id !== o.id)), 6000);
           setTimeout(() => setNewIds((s) => { const n = new Set(s); n.delete(o.id); return n; }), 10000);
         });
       }
@@ -98,7 +112,6 @@ export default function IncomingOrdersPage() {
     load();
     const t = setInterval(load, 8000);
     return () => clearInterval(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function accept(orderId: string) {
@@ -129,22 +142,7 @@ export default function IncomingOrdersPage() {
       <Header />
 
       {/* Live arrival toasts */}
-      <div className="pointer-events-none fixed right-4 top-20 z-[60] flex flex-col gap-2">
-        {toasts.map((t) => (
-          <div
-            key={t.id}
-            className="pointer-events-auto flex items-center gap-3 rounded-xl border border-forest/20 bg-white px-4 py-3 shadow-xl shadow-black/10"
-          >
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-forest/10 text-forest">
-              <Inbox size={14} />
-            </span>
-            <div>
-              <p className="text-xs font-semibold text-charcoal">New order just came in</p>
-              <p className="text-[11px] text-ink-muted">{t.reference}</p>
-            </div>
-          </div>
-        ))}
-      </div>
+      <ToastStack toasts={toasts} onDismiss={dismissToast} />
 
       <main className="flex-1 bg-cream">
         <section className="border-b border-sand-deep bg-charcoal py-10 text-cream">

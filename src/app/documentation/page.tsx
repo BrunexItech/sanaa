@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, UploadCloud, CheckCircle2, ImagePlus, Sparkles, ChevronDown } from "lucide-react";
+import { Camera, UploadCloud, CheckCircle2, ImagePlus, Sparkles, ChevronDown, Radio, RefreshCcw } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Spinner } from "@/components/Spinner";
@@ -39,6 +39,40 @@ function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
+// Phone camera photos routinely come in at 4000px+ and several MB — way more
+// than a product thumbnail needs. Downscaling client-side before it ever
+// becomes a data URL keeps publishing fast and the DB row small.
+const MAX_DIMENSION = 1600;
+const JPEG_QUALITY = 0.85;
+
+function compressImage(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const scale = Math.min(1, MAX_DIMENSION / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        reject(new Error("Could not process image."));
+        return;
+      }
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL("image/jpeg", JPEG_QUALITY));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("Could not read that image file."));
+    };
+    img.src = objectUrl;
+  });
+}
+
 export default function DocumentationPage() {
   const router = useRouter();
   const { profile, ready } = useStaffProfile();
@@ -63,6 +97,8 @@ export default function DocumentationPage() {
   const [days, setDays] = useState("7");
 
   const [saving, setSaving] = useState(false);
+  const [processingPhoto, setProcessingPhoto] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [justPublished, setJustPublished] = useState<RecentProduct | null>(null);
 
@@ -83,12 +119,26 @@ export default function DocumentationPage() {
   useEffect(() => {
     loadArtisans();
     loadRecent();
+    const interval = setInterval(loadRecent, 8000);
+    return () => clearInterval(interval);
   }, []);
 
   async function handleFile(file: File | undefined) {
-    if (!file) return;
-    const dataUrl = await fileToDataUrl(file);
-    setImageDataUrl(dataUrl);
+    if (!file || !file.type.startsWith("image/")) return;
+    setProcessingPhoto(true);
+    setError(null);
+    try {
+      const dataUrl = await compressImage(file);
+      setImageDataUrl(dataUrl);
+    } catch {
+      try {
+        setImageDataUrl(await fileToDataUrl(file));
+      } catch {
+        setError("Could not read that photo. Try a different file.");
+      }
+    } finally {
+      setProcessingPhoto(false);
+    }
   }
 
   function resetForm() {
@@ -188,19 +238,46 @@ export default function DocumentationPage() {
                   className="hidden"
                   id="photo-input"
                 />
-                <label
-                  htmlFor="photo-input"
-                  className="flex aspect-[16/9] w-full cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border-2 border-dashed border-sand-deep bg-sand/40 transition-colors hover:border-clay/50"
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setDragOver(true);
+                  }}
+                  onDragLeave={() => setDragOver(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setDragOver(false);
+                    handleFile(e.dataTransfer.files?.[0]);
+                  }}
+                  className={`relative flex aspect-[16/9] w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border-2 border-dashed bg-sand/40 transition-colors ${
+                    dragOver ? "border-clay bg-clay/5" : "border-sand-deep"
+                  }`}
                 >
-                  {imageDataUrl ? (
-                    <img src={imageDataUrl} alt="" className="h-full w-full object-cover" />
-                  ) : (
+                  {processingPhoto ? (
                     <>
-                      <ImagePlus size={24} className="text-ink-muted" />
-                      <p className="text-xs text-ink-muted">Click to choose a photo</p>
+                      <Spinner size={22} />
+                      <p className="text-xs text-ink-muted">Processing photo…</p>
                     </>
+                  ) : imageDataUrl ? (
+                    <>
+                      <img src={imageDataUrl} alt="" className="h-full w-full object-cover" />
+                      <label
+                        htmlFor="photo-input"
+                        className="absolute bottom-2.5 right-2.5 flex cursor-pointer items-center gap-1.5 rounded-full bg-onyx/75 px-3 py-1.5 text-[11px] font-semibold text-cream backdrop-blur-sm transition-colors hover:bg-onyx/90"
+                      >
+                        <RefreshCcw size={11} /> Change photo
+                      </label>
+                    </>
+                  ) : (
+                    <label
+                      htmlFor="photo-input"
+                      className="flex h-full w-full cursor-pointer flex-col items-center justify-center gap-2"
+                    >
+                      <ImagePlus size={24} className="text-ink-muted" />
+                      <p className="text-xs text-ink-muted">Click to choose, or drag a photo here</p>
+                    </label>
                   )}
-                </label>
+                </div>
               </div>
 
               <Field label="Product name">
@@ -299,10 +376,18 @@ export default function DocumentationPage() {
               <p className="mt-4 rounded-lg bg-clay/10 px-3 py-2 text-xs font-medium text-clay-dark">{error}</p>
             )}
 
+            <div className="mt-6 flex items-center justify-center gap-1.5 text-[11px] font-medium text-ink-muted">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-clay opacity-60" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-clay" />
+              </span>
+              <Radio size={11} /> Publishes straight to the live marketplace — no review queue
+            </div>
+
             <button
               onClick={handlePublish}
-              disabled={saving || !imageDataUrl || !name.trim() || !price || !artisanId}
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-forest px-5 py-3.5 text-sm font-semibold text-cream shadow-lg shadow-forest/20 transition-transform hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={saving || processingPhoto || !imageDataUrl || !name.trim() || !price || !artisanId}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-forest px-5 py-3.5 text-sm font-semibold text-cream shadow-lg shadow-forest/20 transition-transform hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {saving ? (
                 <>

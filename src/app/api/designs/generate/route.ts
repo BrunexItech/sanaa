@@ -29,6 +29,10 @@ export async function POST(req: Request) {
     const openai = getOpenAI();
     const fullPrompt = buildDesignPrompt(itemType, prompt);
 
+    // Step 1 of 2: the product concept only. The "see it on you" model shot
+    // is a deliberate second step the client triggers once this is back
+    // (PATCH /api/designs/[id]) — picking, then generating, then dressing,
+    // in that visible order, not all at once.
     const result = await openai.images.generate({
       model: IMAGE_MODEL,
       prompt: fullPrompt,

@@ -39,8 +39,15 @@ export function ProductDetailClient({
 }) {
   const router = useRouter();
   const [activeImage, setActiveImage] = useState(product.image);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const [qty, setQty] = useState(1);
   const [navigating, setNavigating] = useState(false);
+
+  function selectImage(src: string) {
+    if (src === activeImage) return;
+    setImageLoaded(false);
+    setActiveImage(src);
+  }
 
   async function handleBuyNow() {
     setNavigating(true);
@@ -61,20 +68,26 @@ export function ProductDetailClient({
           <div className="mt-6 grid gap-10 lg:grid-cols-2">
             <div className="flex flex-col gap-3">
               <div className="relative aspect-square overflow-hidden rounded-3xl bg-sand-deep">
+                {!imageLoaded && (
+                  <div className="absolute inset-0 z-10 flex items-center justify-center">
+                    <Spinner size={28} />
+                  </div>
+                )}
                 <Image
                   src={activeImage}
                   alt={product.name}
                   fill
                   priority
                   sizes="(min-width: 1024px) 45vw, 90vw"
-                  className="object-cover"
+                  onLoad={() => setImageLoaded(true)}
+                  className={`object-cover transition-opacity duration-300 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
                 />
               </div>
               <div className="flex gap-3">
                 {product.gallery.map((src, i) => (
                   <button
                     key={i}
-                    onClick={() => setActiveImage(src)}
+                    onClick={() => selectImage(src)}
                     className={`relative h-20 w-20 overflow-hidden rounded-xl ring-2 transition-colors ${
                       activeImage === src ? "ring-clay" : "ring-transparent"
                     }`}
@@ -115,27 +128,9 @@ export function ProductDetailClient({
                 )}
               </div>
 
-              <p className="mt-5 text-sm leading-relaxed text-charcoal-soft">
-                {product.description}
-              </p>
-
-              <div className="mt-6 rounded-xl bg-sand px-4 py-3 text-sm text-charcoal-soft">
-                <span className="font-semibold text-charcoal">The story: </span>
-                {product.story}
-              </div>
-
-              <dl className="mt-6 grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <dt className="text-xs uppercase tracking-wide text-ink-muted">Materials</dt>
-                  <dd className="mt-1 text-charcoal-soft">{product.materials.join(", ")}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs uppercase tracking-wide text-ink-muted">Dimensions</dt>
-                  <dd className="mt-1 text-charcoal-soft">{product.dimensions}</dd>
-                </div>
-              </dl>
-
-              <div className="mt-8 flex items-center gap-4">
+              {/* Purchase action sits right under the price — no need to
+                  scroll past description/story/materials to buy. */}
+              <div className="mt-6 flex items-center gap-4">
                 <div className="flex items-center rounded-full border border-sand-deep">
                   <button
                     onClick={() => setQty((q) => Math.max(1, q - 1))}
@@ -156,7 +151,7 @@ export function ProductDetailClient({
                 <span className="text-xs text-ink-muted">{product.stock} in stock</span>
               </div>
 
-              <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                 <button
                   onClick={handleBuyNow}
                   disabled={navigating}
@@ -171,6 +166,26 @@ export function ProductDetailClient({
                   Design your own instead
                 </Link>
               </div>
+
+              <p className="mt-6 text-sm leading-relaxed text-charcoal-soft">
+                {product.description}
+              </p>
+
+              <div className="mt-6 rounded-xl bg-sand px-4 py-3 text-sm text-charcoal-soft">
+                <span className="font-semibold text-charcoal">The story: </span>
+                {product.story}
+              </div>
+
+              <dl className="mt-6 grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <dt className="text-xs uppercase tracking-wide text-ink-muted">Materials</dt>
+                  <dd className="mt-1 text-charcoal-soft">{product.materials.join(", ")}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase tracking-wide text-ink-muted">Dimensions</dt>
+                  <dd className="mt-1 text-charcoal-soft">{product.dimensions}</dd>
+                </div>
+              </dl>
 
               <div className="mt-8 flex flex-col gap-3 border-t border-sand-deep pt-6 text-xs text-ink-muted">
                 <div className="flex items-center gap-2">

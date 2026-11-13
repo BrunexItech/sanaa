@@ -16,6 +16,8 @@ import {
   Rows3,
   Droplets,
   Link2,
+  UserRound,
+  Shuffle,
 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -59,6 +61,14 @@ export default function DesignPage() {
   const [result, setResult] = useState<{ id: string; aiImageUrl: string; priceCents: number; prompt: string } | null>(null);
   const [confirming, setConfirming] = useState(false);
 
+  // Step 2: only starts once the product concept (above) has finished —
+  // "choose, then generate, then dress" stays a visible sequence, not a
+  // single simultaneous spinner.
+  const [modelImageUrl, setModelImageUrl] = useState<string | null>(null);
+  const [dressing, setDressing] = useState(false);
+  const [modelError, setModelError] = useState<string | null>(null);
+  const modelVariant = useRef(0);
+
   const progressTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const selectedItem = ITEM_TYPES.find((i) => i.id === itemType)!;
@@ -73,11 +83,39 @@ export default function DesignPage() {
     };
   }, []);
 
+  async function dressModel(id: string, variant: number) {
+    setDressing(true);
+    setModelError(null);
+    try {
+      const res = await fetch(`/api/designs/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ variant }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Could not generate that look.");
+      setModelImageUrl(data.design.aiModelImageUrl);
+    } catch (e) {
+      setModelError(e instanceof Error ? e.message : "Could not generate that look.");
+    } finally {
+      setDressing(false);
+    }
+  }
+
+  function handleChangeModel() {
+    if (!result || dressing) return;
+    modelVariant.current += 1;
+    dressModel(result.id, modelVariant.current);
+  }
+
   async function handleGenerate() {
     if (!prompt.trim() || generating) return;
     setGenerating(true);
     setError(null);
     setResult(null);
+    setModelImageUrl(null);
+    setModelError(null);
+    modelVariant.current = 0;
     setProgress(2);
 
     const startedAt = Date.now();
@@ -106,6 +144,9 @@ export default function DesignPage() {
         priceCents: data.design.priceCents,
         prompt: prompt.trim(),
       });
+
+      // Step 2 starts only now that step 1's concept image is confirmed back.
+      dressModel(data.design.id, 0);
     } catch (e) {
       if (progressTimer.current) clearInterval(progressTimer.current);
       setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
@@ -118,6 +159,8 @@ export default function DesignPage() {
   function handleReset() {
     setResult(null);
     setError(null);
+    setModelImageUrl(null);
+    setModelError(null);
   }
 
   function handleCheckout() {
@@ -129,29 +172,29 @@ export default function DesignPage() {
   return (
     <>
       <Header />
-      <main className="flex-1 bg-onyx">
-        <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8 lg:py-10">
-          <div className="mb-6">
+      <main className="flex-1 bg-onyx lg:h-[calc(100dvh-64px)] lg:overflow-hidden">
+        <div className="mx-auto flex max-w-6xl flex-col px-5 py-4 sm:px-8 lg:h-full lg:py-4">
+          <div className="mb-3 shrink-0 lg:mb-2.5">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-gold-soft/30 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-gold-soft">
               <Sparkles size={11} /> AI Design Studio
             </span>
-            <h1 className="mt-3 font-display text-2xl font-semibold text-cream sm:text-3xl">
+            <h1 className="mt-2 font-display text-xl font-semibold text-cream sm:text-2xl lg:mt-1.5">
               Design your own Maa masterpiece
             </h1>
-            <p className="mt-2 max-w-lg text-sm text-cream/60">
+            <p className="mt-1 max-w-lg text-xs text-cream/60 sm:text-sm">
               Pick a piece, describe it in your own words, and watch the concept
               come to life — a Sekenani artisan hand-beads the real thing.
             </p>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-[1fr_1.15fr]">
+          <div className="grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-[0.9fr_1fr_1fr] lg:grid-rows-[minmax(0,1fr)] lg:gap-5">
             {/* ---------- Controls ---------- */}
-            <div className="flex flex-col gap-5 rounded-2xl border border-gold-soft/15 bg-white/[0.03] p-5 sm:p-6">
+            <div className="flex flex-col gap-3.5 overflow-y-auto rounded-2xl border border-gold-soft/15 bg-white/[0.03] p-4 sm:p-5 lg:gap-3">
               <div>
-                <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-soft/80">
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-soft/80">
                   1. Select a piece
                 </p>
-                <div className="grid grid-cols-3 gap-2 sm:grid-cols-5 lg:grid-cols-3">
+                <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-5 lg:grid-cols-3">
                   {ITEM_TYPES.map((i) => {
                     const Icon = ITEM_ICONS[i.id];
                     return (
@@ -159,7 +202,7 @@ export default function DesignPage() {
                         key={i.id}
                         onClick={() => setItemType(i.id)}
                         disabled={generating}
-                        className={`flex flex-col items-center gap-1.5 rounded-xl border-2 px-2 py-3 text-center transition-all ${
+                        className={`flex flex-col items-center gap-1.5 rounded-xl border-2 px-2 py-2 text-center transition-all lg:py-2 ${
                           itemType === i.id
                             ? "border-gold bg-gold/15"
                             : "border-cream/15 hover:border-gold/40"
@@ -176,7 +219,7 @@ export default function DesignPage() {
               </div>
 
               <div>
-                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-soft/80">
+                <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-soft/80">
                   2. Size
                 </p>
                 <div className="flex gap-1.5">
@@ -185,7 +228,7 @@ export default function DesignPage() {
                       key={s}
                       onClick={() => setSize(s)}
                       disabled={generating}
-                      className={`h-8 w-8 rounded-full border-2 text-xs font-semibold transition-all ${
+                      className={`h-7 w-7 rounded-full border-2 text-xs font-semibold transition-all ${
                         size === s ? "border-gold bg-gold/15 text-cream" : "border-cream/15 text-cream/50"
                       }`}
                     >
@@ -196,30 +239,30 @@ export default function DesignPage() {
               </div>
 
               <div>
-                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-soft/80">
+                <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-soft/80">
                   3. Describe your design
                 </p>
                 <textarea
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value.slice(0, 400))}
                   placeholder={`e.g. ${PROMPT_IDEAS[0]}`}
-                  rows={3}
+                  rows={2}
                   disabled={generating}
-                  className="w-full resize-none rounded-xl border-2 border-cream/15 bg-white/5 px-3.5 py-2.5 text-sm text-cream placeholder:text-cream/30 focus:border-gold focus:outline-none disabled:opacity-60"
+                  className="w-full resize-none rounded-xl border-2 border-cream/15 bg-white/5 px-3.5 py-2 text-sm text-cream placeholder:text-cream/30 focus:border-gold focus:outline-none disabled:opacity-60 lg:rows-2"
                 />
-                <div className="mt-1.5 flex items-center justify-between">
+                <div className="mt-1 flex items-center justify-between">
                   <p className="text-[10px] text-cream/35">{prompt.length}/400</p>
                 </div>
 
                 {!result && (
-                  <div className="mt-2 flex flex-wrap gap-1.5">
+                  <div className="mt-1.5 flex gap-1.5 overflow-x-auto pb-0.5">
                     {PROMPT_IDEAS.map((idea) => (
                       <button
                         key={idea}
                         type="button"
                         onClick={() => setPrompt(idea)}
                         disabled={generating}
-                        className="rounded-full border border-cream/10 bg-white/[0.03] px-3 py-1 text-[10px] text-cream/50 transition-colors hover:border-gold/30 hover:text-cream/80"
+                        className="shrink-0 whitespace-nowrap rounded-full border border-cream/10 bg-white/[0.03] px-3 py-1 text-[10px] text-cream/50 transition-colors hover:border-gold/30 hover:text-cream/80"
                       >
                         {idea.length > 42 ? idea.slice(0, 42) + "…" : idea}
                       </button>
@@ -236,7 +279,7 @@ export default function DesignPage() {
                 <button
                   onClick={handleGenerate}
                   disabled={generating || !prompt.trim()}
-                  className="flex items-center justify-center gap-2 rounded-full bg-gold px-5 py-3.5 text-sm font-semibold text-onyx shadow-lg shadow-gold/20 transition-transform hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="flex items-center justify-center gap-2 rounded-full bg-gold px-5 py-3 text-sm font-semibold text-onyx shadow-lg shadow-gold/20 transition-transform hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {generating ? (
                     <>
@@ -252,8 +295,8 @@ export default function DesignPage() {
             </div>
 
             {/* ---------- Stage ---------- */}
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between">
+            <div className="flex min-h-0 flex-col gap-3 lg:h-full">
+              <div className="flex shrink-0 items-center justify-between">
                 <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.15em] text-gold-soft/80">
                   <Sparkles size={13} /> Your design in progress
                 </p>
@@ -267,7 +310,7 @@ export default function DesignPage() {
                 )}
               </div>
 
-              <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-gold-soft/20 bg-gradient-to-br from-white/[0.04] to-transparent shadow-2xl shadow-black/40">
+              <div className="relative aspect-square w-full min-h-0 flex-1 overflow-hidden rounded-2xl border border-gold-soft/20 bg-gradient-to-br from-white/[0.04] to-transparent shadow-2xl shadow-black/40 lg:aspect-auto">
                 <div
                   className="pointer-events-none absolute inset-0"
                   style={{
@@ -323,16 +366,84 @@ export default function DesignPage() {
               </div>
 
               {result && (
-                <div className="rounded-xl border border-gold-soft/15 bg-white/[0.03] px-4 py-3">
+                <div className="shrink-0 rounded-xl border border-gold-soft/15 bg-white/[0.03] px-4 py-2.5">
                   <p className="text-[10px] uppercase tracking-wide text-cream/40">Your prompt</p>
                   <p className="mt-0.5 text-xs text-cream/75">&ldquo;{result.prompt}&rdquo;</p>
                 </div>
               )}
             </div>
+
+            {/* ---------- See It on You (step 2, only after step 1 is done) ---------- */}
+            <div className="flex min-h-0 flex-col gap-3 lg:h-full">
+              <div className="flex shrink-0 items-center justify-between">
+                <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.15em] text-gold-soft/80">
+                  <UserRound size={13} /> See it on you
+                </p>
+                {modelImageUrl && !dressing && (
+                  <button
+                    onClick={handleChangeModel}
+                    className="flex items-center gap-1.5 text-xs font-semibold text-cream/50 hover:text-cream"
+                  >
+                    <Shuffle size={12} /> Change Model
+                  </button>
+                )}
+              </div>
+
+              <div className="relative aspect-square w-full min-h-0 flex-1 overflow-hidden rounded-2xl border border-gold-soft/20 bg-gradient-to-br from-white/[0.04] to-transparent shadow-2xl shadow-black/40 lg:aspect-auto">
+                <div
+                  className="pointer-events-none absolute inset-0"
+                  style={{
+                    background:
+                      "radial-gradient(circle at 25% 15%, rgba(198,138,46,0.16), transparent 55%), radial-gradient(circle at 80% 85%, rgba(47,74,58,0.22), transparent 50%)",
+                  }}
+                />
+
+                {!result ? (
+                  <div className="relative z-10 flex h-full flex-col items-center justify-center gap-4 px-10 text-center">
+                    <span className="flex h-14 w-14 items-center justify-center rounded-full border border-gold-soft/30 bg-white/5">
+                      <UserRound size={22} className="text-gold-soft" />
+                    </span>
+                    <p className="text-sm font-medium text-cream/80">Worn on a model will appear here</p>
+                    <p className="text-xs text-cream/45">
+                      Generate your design first — dressing comes right after.
+                    </p>
+                  </div>
+                ) : dressing ? (
+                  <div className="relative z-10 flex h-full flex-col items-center justify-center gap-4 px-8 text-center">
+                    <Spinner size={28} />
+                    <div>
+                      <p className="text-sm font-medium text-cream">Dressing your design…</p>
+                      <p className="mt-1 text-xs text-cream/50">Fitting it on a model, 10–15 seconds.</p>
+                    </div>
+                  </div>
+                ) : modelImageUrl ? (
+                  <img
+                    src={modelImageUrl}
+                    alt={`${result.prompt} worn on a model`}
+                    className="relative z-10 h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="relative z-10 flex h-full flex-col items-center justify-center gap-4 px-8 text-center">
+                    <span className="flex h-14 w-14 items-center justify-center rounded-full border border-gold-soft/30 bg-white/5">
+                      <UserRound size={22} className="text-gold-soft" />
+                    </span>
+                    <p className="text-sm font-medium text-cream/80">
+                      {modelError ?? "Couldn't generate that look."}
+                    </p>
+                    <button
+                      onClick={handleChangeModel}
+                      className="flex items-center gap-1.5 text-xs font-semibold text-gold-soft hover:text-gold"
+                    >
+                      <RefreshCcw size={12} /> Try again
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* ---------- Trust badges ---------- */}
-          <div className="mt-6 grid grid-cols-1 gap-3 rounded-2xl border border-gold-soft/15 bg-white/[0.03] p-4 sm:grid-cols-3">
+          <div className="mt-3 grid shrink-0 grid-cols-1 gap-2.5 rounded-2xl border border-gold-soft/15 bg-white/[0.03] p-3 sm:grid-cols-3 lg:mt-3 lg:p-3">
             <span className="flex items-center gap-2.5 text-xs text-cream/70">
               <ShieldCheck size={16} className="shrink-0 text-gold-soft" /> Reviewed &amp; hand-beaded by an artisan
             </span>
@@ -340,12 +451,12 @@ export default function DesignPage() {
               <Truck size={16} className="shrink-0 text-gold-soft" /> {selectedItem.days}-day production, delivered across Kenya
             </span>
             <span className="flex items-center gap-2.5 text-xs text-cream/70">
-              <Leaf size={16} className="shrink-0 text-gold-soft" /> Every order supports a Maa women's cooperative
+              <Leaf size={16} className="shrink-0 text-gold-soft" /> Every order supports a Maa women&apos;s cooperative
             </span>
           </div>
 
           {/* ---------- Price / checkout bar ---------- */}
-          <div className="mt-6 flex flex-col gap-4 rounded-2xl border border-gold-soft/20 bg-white/[0.04] p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mt-3 flex shrink-0 flex-col gap-3 rounded-2xl border border-gold-soft/20 bg-white/[0.04] p-4 sm:flex-row sm:items-center sm:justify-between lg:mt-3 lg:p-4">
             <div>
               <p className="text-[10px] uppercase tracking-wide text-cream/40">
                 {selectedItem.label} &middot; bespoke AI concept &middot; size {size}
@@ -357,7 +468,7 @@ export default function DesignPage() {
               <button
                 onClick={handleCheckout}
                 disabled={confirming}
-                className="flex items-center justify-center gap-2 rounded-full bg-gold px-6 py-3.5 text-sm font-semibold text-onyx shadow-lg shadow-gold/20 transition-transform hover:scale-[1.02] disabled:opacity-80"
+                className="flex items-center justify-center gap-2 rounded-full bg-gold px-6 py-3 text-sm font-semibold text-onyx shadow-lg shadow-gold/20 transition-transform hover:scale-[1.02] disabled:opacity-80"
               >
                 {confirming ? (
                   <>
