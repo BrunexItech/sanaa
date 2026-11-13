@@ -60,16 +60,10 @@ export function Footer() {
           <p>&copy; 2026 Ushanga Artisan Platform. Prototype build — demonstration only.</p>
           <div className="flex flex-wrap gap-2">
             <a
-              href="/production"
+              href="/staff"
               className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 font-medium text-sand hover:text-cream hover:border-white/30"
             >
-              Studio staff: production queue &rarr;
-            </a>
-            <a
-              href="/admin/qr"
-              className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 font-medium text-sand hover:text-cream hover:border-white/30"
-            >
-              Exhibition QR codes &rarr;
+              Staff tools &rarr;
             </a>
           </div>
         </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Hammer, ArrowRight, RefreshCcw } from "lucide-react";
+import { Hammer, ArrowRight, RefreshCcw, Sparkles } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Spinner } from "@/components/Spinner";
@@ -16,7 +16,7 @@ type Order = {
   customerName: string;
   createdAt: string;
   product: { name: string } | null;
-  customDesign: { itemType: string; colorway: string; patternStyle: string } | null;
+  customDesign: { itemType: string; source: string; colorway: string | null; patternStyle: string | null } | null;
   artisan: { name: string } | null;
 };
 
@@ -39,8 +39,8 @@ export default function ProductionDashboard() {
   const [loading, setLoading] = useState(true);
   const [advancing, setAdvancing] = useState<string | null>(null);
 
-  async function load() {
-    setLoading(true);
+  async function load(showSpinner = false) {
+    if (showSpinner) setLoading(true);
     const res = await fetch("/api/production");
     const data = await res.json();
     setOrders(data.orders ?? []);
@@ -48,7 +48,9 @@ export default function ProductionDashboard() {
   }
 
   useEffect(() => {
-    load();
+    load(true);
+    const t = setInterval(() => load(), 8000);
+    return () => clearInterval(t);
   }, []);
 
   async function advance(orderId: string) {
@@ -73,7 +75,7 @@ export default function ProductionDashboard() {
             </span>
             <h1 className="mt-3 font-display text-2xl font-semibold sm:text-3xl">Production queue</h1>
             <p className="mt-1 text-sm text-sand-deep">
-              Every confirmed order lands here for the artisans to pick up and move through production.
+              Orders accepted from the Incoming Orders desk move through here, stage by stage, until they&apos;re ready.
             </p>
           </div>
         </section>
@@ -81,12 +83,17 @@ export default function ProductionDashboard() {
         <div className="mx-auto max-w-6xl px-5 py-10 sm:px-8">
           <div className="mb-4 flex items-center justify-between">
             <p className="text-sm text-ink-muted">{orders.length} active order{orders.length === 1 ? "" : "s"}</p>
-            <button
-              onClick={load}
-              className="flex items-center gap-1.5 rounded-full border border-sand-deep px-3.5 py-1.5 text-xs font-semibold text-charcoal-soft hover:border-clay hover:text-clay"
-            >
-              <RefreshCcw size={13} /> Refresh
-            </button>
+            <div className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5 text-[11px] text-ink-muted">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-forest" /> Live
+              </span>
+              <button
+                onClick={() => load(true)}
+                className="flex items-center gap-1.5 rounded-full border border-sand-deep px-3.5 py-1.5 text-xs font-semibold text-charcoal-soft hover:border-clay hover:text-clay"
+              >
+                <RefreshCcw size={13} /> Refresh
+              </button>
+            </div>
           </div>
 
           {loading ? (
@@ -113,12 +120,17 @@ export default function ProductionDashboard() {
                     </span>
                   </div>
 
-                  <p className="mt-3 text-sm font-medium text-charcoal-soft">
+                  <p className="mt-3 flex items-center gap-1.5 text-sm font-medium text-charcoal-soft">
                     {o.product
                       ? o.product.name
                       : o.customDesign
-                      ? `Custom ${o.customDesign.itemType} · ${o.customDesign.patternStyle}`
+                      ? `Custom ${o.customDesign.itemType}${
+                          o.customDesign.source === "AI_PROMPT" ? "" : ` · ${o.customDesign.patternStyle}`
+                        }`
                       : "—"}
+                    {o.customDesign?.source === "AI_PROMPT" && (
+                      <Sparkles size={12} className="shrink-0 text-gold" />
+                    )}
                   </p>
                   {o.artisan && <p className="mt-0.5 text-xs text-ink-muted">Artisan: {o.artisan.name}</p>}
                   <p className="mt-2 font-display text-base font-semibold text-clay-dark">
