@@ -27,4 +27,5 @@ export const img = {
   heroUshanga: "/images/hero-ushanga-reference.jpg",
   tryonWrist: "/images/tryon-wrist.jpg",
   tryonEar: "/images/tryon-ear.jpg",
+  tryonWaist: "/images/tryon-waist.jpg",
 } as const;

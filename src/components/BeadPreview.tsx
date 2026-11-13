@@ -28,6 +28,7 @@ const BACKDROPS: Record<string, { src: string; position: string }> = {
   necklace: { src: img.heroUshanga, position: "68% 18%" },
   earrings: { src: img.tryonEar, position: "center" },
   bracelet: { src: img.tryonWrist, position: "center" },
+  belt: { src: img.tryonWaist, position: "center" },
 };
 
 export function BeadPreview({
@@ -57,7 +58,7 @@ export function BeadPreview({
     );
   }
 
-  // Belt / bag strap: no clean body-part photo available — flat catalogue-style swatch.
+  // Bag strap: no clean body-part photo available — flat catalogue-style swatch.
   return (
     <FlatSwatch colors={colors} patternId={patternId} compact={compact} />
   );
@@ -76,7 +77,8 @@ function PhotoTryOn({
   itemTypeId: string;
   compact: boolean;
 }) {
-  const beadCount = itemTypeId === "earrings" ? 7 : itemTypeId === "bracelet" ? 14 : 22;
+  const beadCount =
+    itemTypeId === "earrings" ? 7 : itemTypeId === "bracelet" ? 14 : itemTypeId === "belt" ? 26 : 22;
   const sequence = beadSequence(colors, patternId, beadCount);
 
   return (
@@ -131,6 +133,13 @@ function PhotoTryOn({
           sequence.slice(0, 7).map((color, i) => (
             <circle key={i} cx={78} cy={150 + i * 16} r={6} fill={color} opacity={0.92} />
           ))}
+
+        {itemTypeId === "belt" &&
+          sequence.map((color, i) => {
+            const x = 20 + i * 10.5;
+            const y = 118 + Math.sin(i * 0.5) * 3;
+            return <circle key={i} cx={x} cy={y} r={6} fill={color} opacity={0.92} />;
+          })}
       </svg>
     </div>
   );
