@@ -1,0 +1,148 @@
+// Ushanga Kenya — catalog, AI configurator designs, and the order → production pipeline.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum OrderChannel {
+  ONLINE
+  WALK_IN
+}
+
+enum OrderSource {
+  CATALOG
+  CUSTOM_DESIGN
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  CONFIRMED
+  IN_PRODUCTION
+  QUALITY_CHECK
+  READY
+  SHIPPED
+  COMPLETED
+  CANCELLED
+}
+
+// The 5 QR visitor journeys from the Sekenani visitor-experience blueprint (section 10).
+enum QrJourney {
+  UNDERSTANDING_USHANGA
+  BEAD_TRADITIONS
+  PRODUCTION
+  PRODUCTS
+  VIRTUAL_EXPERIENCE
+}
+
+model QrStation {
+  id          String    @id @default(cuid())
+  code        String    @unique // short stable code embedded in the QR, e.g. "LCS-01"
+  label       String    // e.g. "Living Craft Studio — Station 1"
+  journey     QrJourney
+  targetUrl   String?   // optional deep-link override (e.g. a specific product/category)
+  active      Boolean   @default(true)
+  scanCount   Int       @default(0)
+  createdAt   DateTime  @default(now())
+}
+
+model Artisan {
+  id           String   @id @default(cuid())
+  name         String
+  craft        String
+  county       String
+  cooperative  String
+  bio          String
+  years        Int
+  members      Int
+  photo        String
+  cover        String
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  products     Product[]
+  orders       Order[]
+}
+
+model Product {
+  id              String   @id @default(cuid())
+  name            String
+  slug            String   @unique
+  category        String
+  priceCents      Int
+  compareAtCents  Int?
+  rating          Float    @default(4.5)
+  reviews         Int      @default(0)
+  stock           Int      @default(10)
+  image           String
+  gallery         String[]
+  description     String
+  story           String
+  materials       String[]
+  dimensions      String
+  madeToOrderDays Int      @default(7)
+  artisanId       String
+  artisan         Artisan  @relation(fields: [artisanId], references: [id])
+  createdAt       DateTime @default(now())
+
+  orders          Order[]
+}
+
+// Deterministic "AI configurator" design — not a generative model, a guided
+// set of real craft options that still has to be producible by an artisan.
+model CustomDesign {
+  id           String   @id @default(cuid())
+  itemType     String   // necklace, bracelet, belt, earrings, bag strap
+  colorway     String   // named palette, e.g. "Maasai Sunset"
+  patternStyle String   // e.g. "Chevron", "Diamond", "Single Strand"
+  size         String   // S/M/L or measurement band
+  notes        String?
+  previewSeed  Int      // deterministic seed driving the SVG preview on the frontend
+  createdAt    DateTime @default(now())
+
+  orders       Order[]
+}
+
+model Order {
+  id               String        @id @default(cuid())
+  reference        String        @unique
+  channel          OrderChannel  @default(ONLINE)
+  source           OrderSource
+  status           OrderStatus   @default(PENDING_PAYMENT)
+
+  customerName     String
+  customerEmail    String
+  customerPhone    String
+
+  productId        String?
+  product          Product?      @relation(fields: [productId], references: [id])
+  customDesignId   String?
+  customDesign     CustomDesign? @relation(fields: [customDesignId], references: [id])
+
+  artisanId        String?
+  artisan          Artisan?      @relation(fields: [artisanId], references: [id])
+
+  quantity         Int           @default(1)
+  totalCents       Int
+  paymentMethod    String        // mpesa | card
+  paymentReference String?
+
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  events           OrderEvent[]
+}
+
+// Audit trail that powers the visible "production pipeline" status tracker.
+model OrderEvent {
+  id        String      @id @default(cuid())
+  orderId   String
+  order     Order       @relation(fields: [orderId], references: [id])
+  status    OrderStatus
+  note      String?
+  createdAt DateTime    @default(now())
+}

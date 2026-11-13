@@ -1,0 +1,203 @@
+@import "tailwindcss";
+
+:root {
+  --background: #FAF8F4;
+  --foreground: #241C19;
+
+  /* Sanaa palette — Kenyan terracotta, charcoal, gold, deep green */
+  --clay: #B3482F;
+  --clay-dark: #8C3620;
+  --charcoal: #241C19;
+  --charcoal-soft: #3A2E29;
+  --sand: #F3EBDD;
+  --sand-deep: #E7DBC4;
+  --gold: #C68A2E;
+  --gold-soft: #DDAE5C;
+  --forest: #2F4A3A;
+  --forest-soft: #42644F;
+  --cream: #FAF8F4;
+  --ink-muted: #6B5F58;
+  --onyx: #15110D;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-clay: var(--clay);
+  --color-clay-dark: var(--clay-dark);
+  --color-charcoal: var(--charcoal);
+  --color-charcoal-soft: var(--charcoal-soft);
+  --color-sand: var(--sand);
+  --color-sand-deep: var(--sand-deep);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-forest: var(--forest);
+  --color-forest-soft: var(--forest-soft);
+  --color-cream: var(--cream);
+  --color-ink-muted: var(--ink-muted);
+  --color-onyx: var(--onyx);
+  --font-display: var(--font-fraunces);
+  --font-sans: var(--font-inter);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-fraunces), Georgia, serif;
+}
+
+/* Thin scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--sand); }
+::-webkit-scrollbar-thumb { background: var(--sand-deep); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: var(--gold-soft); }
+
+/* Focus ring consistency */
+:focus-visible {
+  outline: 2px solid var(--clay);
+  outline-offset: 2px;
+}
+
+/* ---------- Spinners ---------- */
+
+@keyframes sanaa-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes sanaa-spin-reverse {
+  to { transform: rotate(-360deg); }
+}
+@keyframes sanaa-pulse-ring {
+  0% { transform: scale(0.8); opacity: 0.6; }
+  80%, 100% { transform: scale(1.6); opacity: 0; }
+}
+@keyframes sanaa-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes sanaa-shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.animate-fade-in {
+  animation: sanaa-fade-in 0.5s ease forwards;
+}
+
+/* ---------- Hero entrance + Ken Burns ---------- */
+
+@keyframes sanaa-hero-zoom {
+  0% { transform: scale(1); }
+  100% { transform: scale(0.96); }
+}
+@keyframes sanaa-rise {
+  from { opacity: 0; transform: translateY(22px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes sanaa-grow-line {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+.sanaa-hero-image {
+  animation: sanaa-hero-zoom 7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.sanaa-rise {
+  opacity: 0;
+  animation: sanaa-rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.sanaa-rise-1 { animation-delay: 0.05s; }
+.sanaa-rise-2 { animation-delay: 0.2s; }
+.sanaa-rise-3 { animation-delay: 0.35s; }
+.sanaa-rise-4 { animation-delay: 0.5s; }
+
+.sanaa-grow-line {
+  display: block;
+  height: 1px;
+  background: var(--gold-soft);
+  animation: sanaa-grow-line 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.4s forwards;
+}
+
+/* ---------- Scroll-reveal for sections ---------- */
+
+.sanaa-reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.sanaa-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sanaa-hero-image, .sanaa-rise, .sanaa-grow-line, .sanaa-reveal {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* ---------- Scroll to top ---------- */
+
+.sanaa-scrolltop {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 9999px;
+  background: var(--charcoal);
+  color: var(--cream);
+  box-shadow: 0 10px 30px -8px rgba(36, 28, 25, 0.45);
+  opacity: 0;
+  transform: translateY(10px) scale(0.9);
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease, background 0.2s ease;
+}
+.sanaa-scrolltop.is-shown {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+.sanaa-scrolltop:hover {
+  background: var(--clay);
+}
+
+.sanaa-shimmer {
+  background: linear-gradient(90deg, var(--sand-deep) 25%, var(--sand) 37%, var(--sand-deep) 63%);
+  background-size: 800px 100%;
+  animation: sanaa-shimmer 1.6s linear infinite;
+}
+
+/* Dual-ring brand spinner */
+.sanaa-spinner {
+  position: relative;
+  width: 1em;
+  height: 1em;
+}
+.sanaa-spinner .ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2px solid transparent;
+}
+.sanaa-spinner .ring-outer {
+  border-top-color: var(--clay);
+  border-right-color: var(--clay);
+  animation: sanaa-spin 0.9s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
+}
+.sanaa-spinner .ring-inner {
+  inset: 3px;
+  border-bottom-color: var(--gold);
+  animation: sanaa-spin-reverse 1.3s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
+}
