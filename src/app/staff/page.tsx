@@ -1,7 +1,13 @@
+"use client";
+
 import Link from "next/link";
-import { Inbox, Hammer, Camera, QrCode, ArrowRight, ShieldAlert } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Inbox, Hammer, Camera, QrCode, ArrowRight, ShieldAlert, LogOut } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { Spinner } from "@/components/Spinner";
+import { useStaffProfile, clearStaffProfile } from "@/lib/staffAuth";
+import { useEffect } from "react";
 
 const TOOLS = [
   {
@@ -31,16 +37,52 @@ const TOOLS = [
 ];
 
 export default function StaffHubPage() {
+  const router = useRouter();
+  const { profile, ready } = useStaffProfile();
+
+  useEffect(() => {
+    if (ready && !profile) router.replace("/staff/login?next=/staff");
+  }, [ready, profile, router]);
+
+  if (!ready || !profile) {
+    return (
+      <>
+        <Header />
+        <main className="flex flex-1 items-center justify-center bg-cream py-24">
+          <Spinner size={24} />
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
   return (
     <>
       <Header />
       <main className="flex-1 bg-cream">
         <section className="border-b border-sand-deep bg-onyx py-12 text-cream">
           <div className="mx-auto max-w-5xl px-5 sm:px-8">
-            <span className="inline-flex items-center gap-2 rounded-full border border-gold-soft/30 bg-white/5 px-4 py-1.5 text-xs font-medium uppercase tracking-[0.2em] text-gold-soft">
-              <ShieldAlert size={13} /> Staff only
-            </span>
-            <h1 className="mt-3 font-display text-3xl font-semibold">Ushanga Staff</h1>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span className="inline-flex items-center gap-2 rounded-full border border-gold-soft/30 bg-white/5 px-4 py-1.5 text-xs font-medium uppercase tracking-[0.2em] text-gold-soft">
+                <ShieldAlert size={13} /> Staff only
+              </span>
+              <div className="flex items-center gap-3 text-xs text-cream/60">
+                Signed in as <span className="font-semibold text-cream">{profile.name}</span>
+                <span className="rounded-full bg-white/10 px-2.5 py-1 text-[10px] uppercase tracking-wide text-gold-soft">
+                  {profile.role}
+                </span>
+                <button
+                  onClick={() => {
+                    clearStaffProfile();
+                    router.replace("/staff/login?next=/staff");
+                  }}
+                  className="flex items-center gap-1 text-cream/50 hover:text-cream"
+                >
+                  <LogOut size={12} /> Switch
+                </button>
+              </div>
+            </div>
+            <h1 className="mt-4 font-display text-3xl font-semibold">Ushanga Staff</h1>
             <p className="mt-2 max-w-xl text-sm text-cream/60">
               Internal tools for the Sekenani studio team — order intake, production
               tracking, cataloguing, and exhibition management.

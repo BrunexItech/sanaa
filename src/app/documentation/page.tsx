@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Camera, UploadCloud, CheckCircle2, ImagePlus, Sparkles } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Camera, UploadCloud, CheckCircle2, ImagePlus, Sparkles, ChevronDown } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Spinner } from "@/components/Spinner";
 import { formatKES } from "@/lib/configurator";
+import { useStaffProfile } from "@/lib/staffAuth";
 
 const CATEGORIES = [
   "Necklaces",
@@ -38,9 +40,17 @@ function fileToDataUrl(file: File): Promise<string> {
 }
 
 export default function DocumentationPage() {
+  const router = useRouter();
+  const { profile, ready } = useStaffProfile();
+
   const [artisans, setArtisans] = useState<Artisan[]>([]);
   const [recent, setRecent] = useState<RecentProduct[]>([]);
+  const [showMore, setShowMore] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (ready && !profile) router.replace("/staff/login?next=/documentation");
+  }, [ready, profile, router]);
 
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [name, setName] = useState("");
@@ -126,6 +136,18 @@ export default function DocumentationPage() {
     }
   }
 
+  if (!ready || !profile) {
+    return (
+      <>
+        <Header />
+        <main className="flex flex-1 items-center justify-center bg-cream py-24">
+          <Spinner size={24} />
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
   return (
     <>
       <Header />
@@ -137,7 +159,7 @@ export default function DocumentationPage() {
             </span>
             <h1 className="mt-3 font-display text-2xl font-semibold sm:text-3xl">Add a finished piece</h1>
             <p className="mt-1 max-w-xl text-sm text-cream/70">
-              Photograph a completed product, fill in the details, and publish —
+              A photo, a name, a price, and an artisan — that&apos;s it. Publish and
               it goes live on the marketplace immediately for customers to buy.
             </p>
           </div>
@@ -209,54 +231,69 @@ export default function DocumentationPage() {
                 />
               </Field>
 
-              <Field label="Artisan">
-                <select value={artisanId} onChange={(e) => setArtisanId(e.target.value)} className="w-full rounded-xl border-2 border-sand-deep bg-white px-3.5 py-2.5 text-sm text-charcoal focus:border-gold focus:outline-none">
-                  {artisans.map((a) => (
-                    <option key={a.id} value={a.id}>{a.name} — {a.craft}</option>
-                  ))}
-                </select>
-              </Field>
-
-              <Field label="Materials (comma separated)">
-                <input
-                  value={materials}
-                  onChange={(e) => setMaterials(e.target.value)}
-                  placeholder="Glass beads, leather, brass"
-                  className="w-full rounded-xl border-2 border-sand-deep bg-white px-3.5 py-2.5 text-sm text-charcoal focus:border-gold focus:outline-none"
-                />
-              </Field>
-
-              <Field label="Dimensions">
-                <input
-                  value={dimensions}
-                  onChange={(e) => setDimensions(e.target.value)}
-                  placeholder="45cm length"
-                  className="w-full rounded-xl border-2 border-sand-deep bg-white px-3.5 py-2.5 text-sm text-charcoal focus:border-gold focus:outline-none"
-                />
-              </Field>
-
-              <Field label="Production days">
-                <input
-                  type="number"
-                  min={1}
-                  value={days}
-                  onChange={(e) => setDays(e.target.value)}
-                  className="w-full rounded-xl border-2 border-sand-deep bg-white px-3.5 py-2.5 text-sm text-charcoal focus:border-gold focus:outline-none"
-                />
-              </Field>
-
               <div className="sm:col-span-2">
-                <Field label="Description">
-                  <textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    rows={3}
-                    placeholder="A short, customer-facing description of this piece."
-                    className="w-full rounded-xl border-2 border-sand-deep bg-white px-3.5 py-2.5 text-sm text-charcoal focus:border-gold focus:outline-none resize-none"
-                  />
+                <Field label="Artisan">
+                  <select value={artisanId} onChange={(e) => setArtisanId(e.target.value)} className="w-full rounded-xl border-2 border-sand-deep bg-white px-3.5 py-2.5 text-sm text-charcoal focus:border-gold focus:outline-none">
+                    {artisans.map((a) => (
+                      <option key={a.id} value={a.id}>{a.name} — {a.craft}</option>
+                    ))}
+                  </select>
                 </Field>
               </div>
             </div>
+
+            <button
+              type="button"
+              onClick={() => setShowMore((s) => !s)}
+              className="mt-4 flex items-center gap-1.5 text-xs font-semibold text-ink-muted hover:text-charcoal"
+            >
+              <ChevronDown size={14} className={`transition-transform ${showMore ? "rotate-180" : ""}`} />
+              {showMore ? "Hide extra details" : "Add more details (optional)"}
+            </button>
+
+            {showMore && (
+              <div className="mt-4 grid gap-4 rounded-xl border border-sand-deep bg-sand/30 p-4 sm:grid-cols-2">
+                <Field label="Materials (comma separated)">
+                  <input
+                    value={materials}
+                    onChange={(e) => setMaterials(e.target.value)}
+                    placeholder="Glass beads, leather, brass"
+                    className="w-full rounded-xl border-2 border-sand-deep bg-white px-3.5 py-2.5 text-sm text-charcoal focus:border-gold focus:outline-none"
+                  />
+                </Field>
+
+                <Field label="Dimensions">
+                  <input
+                    value={dimensions}
+                    onChange={(e) => setDimensions(e.target.value)}
+                    placeholder="45cm length"
+                    className="w-full rounded-xl border-2 border-sand-deep bg-white px-3.5 py-2.5 text-sm text-charcoal focus:border-gold focus:outline-none"
+                  />
+                </Field>
+
+                <Field label="Production days">
+                  <input
+                    type="number"
+                    min={1}
+                    value={days}
+                    onChange={(e) => setDays(e.target.value)}
+                    className="w-full rounded-xl border-2 border-sand-deep bg-white px-3.5 py-2.5 text-sm text-charcoal focus:border-gold focus:outline-none"
+                  />
+                </Field>
+
+                <div className="sm:col-span-2">
+                  <Field label="Description">
+                    <textarea
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      rows={3}
+                      placeholder="A short, customer-facing description of this piece."
+                      className="w-full rounded-xl border-2 border-sand-deep bg-white px-3.5 py-2.5 text-sm text-charcoal focus:border-gold focus:outline-none resize-none"
+                    />
+                  </Field>
+                </div>
+              </div>
+            )}
 
             {error && (
               <p className="mt-4 rounded-lg bg-clay/10 px-3 py-2 text-xs font-medium text-clay-dark">{error}</p>

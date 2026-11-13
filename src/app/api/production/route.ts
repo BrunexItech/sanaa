@@ -14,8 +14,8 @@ export async function GET() {
 }
 
 export async function PATCH(req: Request) {
-  const { orderId } = await req.json();
-  const result = await advanceOrder(orderId);
+  const { orderId, actedBy } = await req.json();
+  const result = await advanceOrder(orderId, actedBy);
   if ("error" in result) return NextResponse.json({ error: result.error }, { status: result.status });
   return NextResponse.json({ order: result.order });
 }

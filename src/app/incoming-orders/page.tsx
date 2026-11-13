@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Inbox, ArrowRight, RefreshCcw, Sparkles, Gem } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Spinner } from "@/components/Spinner";
 import { formatKES } from "@/lib/configurator";
+import { useStaffProfile } from "@/lib/staffAuth";
 
 type Order = {
   id: string;
@@ -31,15 +33,64 @@ function timeAgo(iso: string) {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
+function playChime() {
+  try {
+    // Short, synthesized two-tone chime — no external asset needed.
+    const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const ctx = new Ctx();
+    [660, 880].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.value = freq;
+      osc.type = "sine";
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + i * 0.12 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + i * 0.12 + 0.28);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + i * 0.12);
+      osc.stop(ctx.currentTime + i * 0.12 + 0.3);
+    });
+  } catch {
+    // ignore — notification toast still shows regardless
+  }
+}
+
 export default function IncomingOrdersPage() {
+  const router = useRouter();
+  const { profile, ready } = useStaffProfile();
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState<string | null>(null);
+  const [toasts, setToasts] = useState<{ id: string; reference: string }[]>([]);
+  const [newIds, setNewIds] = useState<Set<string>>(new Set());
+  const seenIds = useRef<Set<string> | null>(null);
+
+  useEffect(() => {
+    if (ready && !profile) router.replace("/staff/login?next=/incoming-orders");
+  }, [ready, profile, router]);
 
   async function load() {
     const res = await fetch("/api/incoming-orders");
     const data = await res.json();
-    setOrders(data.orders ?? []);
+    const fresh: Order[] = data.orders ?? [];
+
+    if (seenIds.current) {
+      const arrivals = fresh.filter((o) => !seenIds.current!.has(o.id));
+      if (arrivals.length > 0) {
+        playChime();
+        setToasts((t) => [...t, ...arrivals.map((o) => ({ id: o.id, reference: o.reference }))]);
+        setNewIds((s) => new Set([...s, ...arrivals.map((o) => o.id)]));
+        arrivals.forEach((o) => {
+          setTimeout(() => setToasts((t) => t.filter((x) => x.id !== o.id)), 6000);
+          setTimeout(() => setNewIds((s) => { const n = new Set(s); n.delete(o.id); return n; }), 10000);
+        });
+      }
+    }
+    seenIds.current = new Set(fresh.map((o) => o.id));
+
+    setOrders(fresh);
     setLoading(false);
   }
 
@@ -47,6 +98,7 @@ export default function IncomingOrdersPage() {
     load();
     const t = setInterval(load, 8000);
     return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function accept(orderId: string) {
@@ -54,15 +106,46 @@ export default function IncomingOrdersPage() {
     await fetch("/api/incoming-orders", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderId }),
+      body: JSON.stringify({ orderId, actedBy: profile?.name }),
     });
     await load();
     setAccepting(null);
   }
 
+  if (!ready || !profile) {
+    return (
+      <>
+        <Header />
+        <main className="flex flex-1 items-center justify-center bg-cream py-24">
+          <Spinner size={24} />
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
   return (
     <>
       <Header />
+
+      {/* Live arrival toasts */}
+      <div className="pointer-events-none fixed right-4 top-20 z-[60] flex flex-col gap-2">
+        {toasts.map((t) => (
+          <div
+            key={t.id}
+            className="pointer-events-auto flex items-center gap-3 rounded-xl border border-forest/20 bg-white px-4 py-3 shadow-xl shadow-black/10"
+          >
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-forest/10 text-forest">
+              <Inbox size={14} />
+            </span>
+            <div>
+              <p className="text-xs font-semibold text-charcoal">New order just came in</p>
+              <p className="text-[11px] text-ink-muted">{t.reference}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
       <main className="flex-1 bg-cream">
         <section className="border-b border-sand-deep bg-charcoal py-10 text-cream">
           <div className="mx-auto max-w-6xl px-5 sm:px-8">
@@ -105,8 +188,18 @@ export default function IncomingOrdersPage() {
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {orders.map((o) => (
-                <div key={o.id} className="flex flex-col overflow-hidden rounded-2xl border border-sand-deep bg-white">
+                <div
+                  key={o.id}
+                  className={`flex flex-col overflow-hidden rounded-2xl border bg-white transition-shadow ${
+                    newIds.has(o.id) ? "border-forest shadow-lg shadow-forest/10" : "border-sand-deep"
+                  }`}
+                >
                   <div className="relative h-36 w-full shrink-0 overflow-hidden bg-sand">
+                    {newIds.has(o.id) && (
+                      <span className="absolute right-2 top-2 z-10 rounded-full bg-forest px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-cream">
+                        New
+                      </span>
+                    )}
                     {o.product ? (
                       <img src={o.product.image} alt="" className="h-full w-full object-cover" />
                     ) : o.customDesign?.aiImageUrl ? (

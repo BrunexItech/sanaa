@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Hammer, ArrowRight, RefreshCcw, Sparkles } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Spinner } from "@/components/Spinner";
 import { formatKES } from "@/lib/configurator";
+import { useStaffProfile } from "@/lib/staffAuth";
 
 type Order = {
   id: string;
@@ -35,9 +37,16 @@ const ACTION_LABEL: Record<string, string> = {
 };
 
 export default function ProductionDashboard() {
+  const router = useRouter();
+  const { profile, ready } = useStaffProfile();
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [advancing, setAdvancing] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (ready && !profile) router.replace("/staff/login?next=/production");
+  }, [ready, profile, router]);
 
   async function load(showSpinner = false) {
     if (showSpinner) setLoading(true);
@@ -58,10 +67,22 @@ export default function ProductionDashboard() {
     await fetch("/api/production", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderId }),
+      body: JSON.stringify({ orderId, actedBy: profile?.name }),
     });
     await load();
     setAdvancing(null);
+  }
+
+  if (!ready || !profile) {
+    return (
+      <>
+        <Header />
+        <main className="flex flex-1 items-center justify-center bg-cream py-24">
+          <Spinner size={24} />
+        </main>
+        <Footer />
+      </>
+    );
   }
 
   return (
