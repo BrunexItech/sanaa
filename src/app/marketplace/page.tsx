@@ -4,7 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { Search, ArrowUpDown, ArrowRight, Sparkles } from "lucide-react";
+import { Search, ArrowUpDown, ArrowRight, Gem } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ProductCard } from "@/components/ProductCard";
@@ -162,7 +162,7 @@ function MarketplaceContent() {
               <Image src={img.artisanBeadwoman} alt="" fill className="object-cover object-[65%_18%]" />
             </div>
             <div className="relative z-10 flex items-center gap-3 text-cream">
-              <Sparkles size={22} className="shrink-0 text-gold-soft" />
+              <Gem size={22} className="shrink-0 text-gold-soft" />
               <div>
                 <p className="font-display text-lg font-semibold">Can&apos;t find what you want?</p>
                 <p className="text-sm text-cream/75">Design your own unique piece with our virtual design studio.</p>

@@ -22,7 +22,7 @@ export const QR_JOURNEYS = [
   {
     id: "VIRTUAL_EXPERIENCE",
     label: "E. Entering the Virtual Experience",
-    description: "The AI Mirror / virtual design studio.",
+    description: "The virtual design studio.",
   },
 ] as const;
 

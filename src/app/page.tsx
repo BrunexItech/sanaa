@@ -143,7 +143,7 @@ export default async function Home() {
                 {
                   step: "01",
                   title: "Discover & order",
-                  desc: "A buyer browses the marketplace or designs a custom piece in the AI Mirror studio.",
+                  desc: "A buyer browses the marketplace or designs a custom piece in the design studio.",
                 },
                 {
                   step: "02",

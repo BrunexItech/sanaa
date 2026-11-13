@@ -1,33 +1,28 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Sparkles, Glasses, LayoutGrid, Palette, Users, Map, ArrowRight, ScanLine } from "lucide-react";
+import { Eye, LayoutGrid, Palette, Users, Map } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { Reveal } from "@/components/Reveal";
 import { img } from "@/lib/images";
 
 const TILES = [
   {
     icon: LayoutGrid,
     title: "Cultural Exhibitions",
-    subtitle: "Discover our heritage",
-    href: "/about",
+    subtitle: "Browse the craft collections",
+    href: "/marketplace",
   },
   {
-    icon: Sparkles,
+    icon: Eye,
     title: "Virtual Try-On",
-    subtitle: "See it on you",
+    subtitle: "See it on you before you order",
     href: "/design",
-  },
-  {
-    icon: Glasses,
-    title: "VR Immersion",
-    subtitle: "Step into our world",
-    href: "/artisans",
   },
   {
     icon: Palette,
     title: "Design Studio",
-    subtitle: "Create your own",
+    subtitle: "Create your own piece",
     href: "/design",
   },
   {
@@ -52,7 +47,7 @@ export default function ExperiencesPage() {
         <div className="relative h-72 w-full sm:h-96">
           <Image
             src={img.artisanBeadwoman}
-            alt="Virtual design studio experience"
+            alt="Ushanga design studio experience"
             fill
             priority
             className="object-cover object-[65%_18%]"
@@ -72,79 +67,35 @@ export default function ExperiencesPage() {
         </div>
 
         <div className="mx-auto max-w-5xl px-5 py-14 sm:px-8">
-          <h2 className="font-display text-2xl font-semibold text-charcoal">A Journey of Discovery</h2>
-          <p className="mt-2 max-w-2xl text-sm text-ink-muted">
-            Immerse yourself in the rich culture of the Maa people through
-            interactive exhibits, virtual experiences and hands-on activities.
-          </p>
+          <Reveal>
+            <h2 className="font-display text-2xl font-semibold text-charcoal">A Journey of Discovery</h2>
+            <p className="mt-2 max-w-2xl text-sm text-ink-muted">
+              Immerse yourself in the rich culture of the Maa people through
+              interactive exhibits, a real craft catalogue and hands-on
+              activities.
+            </p>
+          </Reveal>
 
-          {/* VR Immersion concept showcase — a UI/interaction concept, not footage */}
-          <div className="relative mt-10 overflow-hidden rounded-3xl bg-onyx">
-            <div className="relative h-80 w-full sm:h-96">
-              <Image
-                src={img.heroUshanga}
-                alt="VR immersion concept over Sekenani studio photography"
-                fill
-                className="object-cover object-[68%_14%] opacity-70"
-              />
-              <div className="absolute inset-0 bg-gradient-to-r from-onyx via-onyx/70 to-onyx/10" />
-
-              {/* Scan-frame overlay evoking a VR/AR viewfinder */}
-              <div className="pointer-events-none absolute inset-6 rounded-2xl border border-gold/30 sm:inset-10">
-                <span className="absolute -left-px -top-px h-6 w-6 border-l-2 border-t-2 border-gold" />
-                <span className="absolute -right-px -top-px h-6 w-6 border-r-2 border-t-2 border-gold" />
-                <span className="absolute -bottom-px -left-px h-6 w-6 border-b-2 border-l-2 border-gold" />
-                <span className="absolute -bottom-px -right-px h-6 w-6 border-b-2 border-r-2 border-gold" />
-                <div
-                  className="absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-gold-soft to-transparent"
-                  style={{ animation: "sanaa-scan 3.2s ease-in-out infinite" }}
-                />
-              </div>
-
-              <span className="absolute left-10 top-8 z-10 flex items-center gap-1.5 rounded-full border border-gold/30 bg-black/30 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-gold-soft backdrop-blur-sm sm:left-14 sm:top-10">
-                <ScanLine size={12} /> VR Immersion &mdash; Interaction Concept
-              </span>
-
-              <div className="absolute inset-x-6 bottom-6 z-10 sm:inset-x-10 sm:bottom-10">
-                <h3 className="max-w-md font-display text-2xl font-semibold text-cream sm:text-3xl">
-                  Step into the Sekenani studio, from anywhere
-                </h3>
-                <p className="mt-2 max-w-md text-sm text-cream/75">
-                  A planned headset experience letting remote visitors walk
-                  the Living Craft Studio and watch artisans at work. This
-                  panel shows the interaction concept; the AI Mirror design
-                  studio below is the part that&apos;s live today.
-                </p>
-                <Link
-                  href="/design"
-                  className="mt-5 inline-flex items-center gap-2 rounded-full bg-gold px-5 py-2.5 text-sm font-semibold text-onyx transition-transform hover:scale-[1.02]"
-                >
-                  Try the live AI Mirror instead <ArrowRight size={14} />
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <Reveal delay={100} className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {TILES.map((t) => {
               const Icon = t.icon;
               return (
                 <Link
                   key={t.title}
                   href={t.href}
-                  className="group relative flex h-40 flex-col justify-end overflow-hidden rounded-2xl bg-onyx p-5 text-cream transition-transform hover:scale-[1.02]"
+                  className="group relative flex h-40 flex-col justify-end overflow-hidden rounded-2xl bg-onyx p-5 text-cream transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-black/20"
                 >
                   <div
-                    className="absolute inset-0 opacity-60 transition-opacity group-hover:opacity-75"
+                    className="absolute inset-0 opacity-60 transition-opacity duration-300 group-hover:opacity-80"
                     style={{ background: "radial-gradient(circle at 30% 20%, rgba(198,138,46,0.35), transparent 65%)" }}
                   />
-                  <Icon size={22} className="relative z-10 text-gold-soft" />
+                  <Icon size={22} className="relative z-10 text-gold-soft transition-transform duration-300 group-hover:-translate-y-0.5" />
                   <p className="relative z-10 mt-3 font-display text-base font-semibold">{t.title}</p>
                   <p className="relative z-10 text-xs text-cream/70">{t.subtitle}</p>
                 </Link>
               );
             })}
-          </div>
+          </Reveal>
         </div>
       </main>
       <Footer />

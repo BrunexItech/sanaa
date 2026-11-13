@@ -6,7 +6,7 @@ import {
   CheckCircle2,
   Circle,
   Hammer,
-  Sparkles,
+  BadgeCheck,
   PackageCheck,
   Truck,
   ArrowRight,
@@ -19,7 +19,7 @@ import { formatKES } from "@/lib/configurator";
 const STAGES = [
   { status: "CONFIRMED", label: "Order confirmed", icon: CheckCircle2 },
   { status: "IN_PRODUCTION", label: "In production", icon: Hammer },
-  { status: "QUALITY_CHECK", label: "Quality check", icon: Sparkles },
+  { status: "QUALITY_CHECK", label: "Quality check", icon: BadgeCheck },
   { status: "READY", label: "Ready", icon: PackageCheck },
   { status: "COMPLETED", label: "Completed / dispatched", icon: Truck },
 ];

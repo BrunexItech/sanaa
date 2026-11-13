@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { ArrowRight, Sparkles, Check } from "lucide-react";
+import { ArrowRight, Gem, Check } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Spinner } from "@/components/Spinner";
@@ -67,7 +67,7 @@ export default function DesignPage() {
             />
             <div className="relative z-10 flex items-center justify-between">
               <span className="inline-flex items-center gap-2 rounded-full border border-gold-soft/40 bg-white/5 px-3.5 py-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-gold-soft backdrop-blur-sm">
-                <Sparkles size={12} /> The Ushanga AI Mirror
+                <Gem size={12} /> Ushanga Design Studio
               </span>
               <span className="hidden text-xs text-cream/50 sm:block">Live preview</span>
             </div>

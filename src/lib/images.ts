@@ -25,4 +25,6 @@ export const img = {
   productBasketSingle: "/images/product-basket-single.jpg",
   productSoapstoneShop: "/images/product-soapstone-shop.jpg",
   heroUshanga: "/images/hero-ushanga-reference.jpg",
+  tryonWrist: "/images/tryon-wrist.jpg",
+  tryonEar: "/images/tryon-ear.jpg",
 } as const;
