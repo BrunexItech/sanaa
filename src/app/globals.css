@@ -89,6 +89,33 @@ body {
   0% { background-position: -400px 0; }
   100% { background-position: 400px 0; }
 }
+
+/* ---------- Live-wire arrival flash (incoming orders) ---------- */
+
+@keyframes sanaa-live-flash {
+  0% { opacity: 0; }
+  12% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.sanaa-live-flash {
+  animation: sanaa-live-flash 1.1s ease-out forwards;
+}
+@keyframes sanaa-live-wire {
+  0%, 100% { stroke-dashoffset: 24; }
+  50% { stroke-dashoffset: 0; }
+}
+.sanaa-live-wire-path {
+  animation: sanaa-live-wire 1.4s linear infinite;
+}
+@keyframes sanaa-live-spike {
+  0% { transform: scaleY(1); }
+  30% { transform: scaleY(2.2); }
+  100% { transform: scaleY(1); }
+}
+.sanaa-live-spike {
+  animation: sanaa-live-spike 0.5s ease-out;
+}
+
 @keyframes sanaa-success-pop {
   0% { transform: scale(0.4); opacity: 0; }
   60% { transform: scale(1.12); opacity: 1; }

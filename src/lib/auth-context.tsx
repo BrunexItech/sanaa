@@ -27,7 +27,7 @@ const AuthContext = createContext<AuthState | null>(null);
 const STORAGE_KEY = "sanaa.demo.session";
 
 const DEMO_ACCOUNT = {
-  email: "demo@ushanga.africa",
+  email: "william@ushanga.africa",
   password: "UshangaDemo2026",
   name: "H.E. William Ruto",
 };

@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState, type FormEvent } from "react";
 import {
   CreditCard,
   ShieldCheck,
@@ -12,6 +12,9 @@ import {
   Lock,
   User,
   Mail,
+  Phone,
+  QrCode,
+  Copy,
 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -22,12 +25,24 @@ import { formatKES } from "@/lib/configurator";
 type Step = "details" | "payment" | "mpesa-pending" | "card-processing" | "success";
 type Method = "mpesa" | "card";
 
+type ArtisanSummary = {
+  id: string;
+  name: string;
+  craft: string;
+  county: string;
+  cooperative: string;
+  bio: string;
+  photo: string;
+  phone: string | null;
+};
+
 type ProductSummary = {
   kind: "CATALOG";
   id: string;
   name: string;
   image: string;
   priceCents: number;
+  artisan: ArtisanSummary | null;
 };
 
 type DesignSummary = {
@@ -160,7 +175,7 @@ function CheckoutInner() {
   const [step, setStep] = useState<Step>("details");
   const [method, setMethod] = useState<Method>("mpesa");
   const [fullName, setFullName] = useState("H.E. William Ruto");
-  const [email, setEmail] = useState("demo@ushanga.africa");
+  const [email, setEmail] = useState("william@ushanga.africa");
   const [phone, setPhone] = useState("0712 345 678");
   const [cardName, setCardName] = useState("H.E. William Ruto");
   const [cardNumber, setCardNumber] = useState("4242 4242 4242 4242");
@@ -169,6 +184,9 @@ function CheckoutInner() {
   const [mpesaSeconds, setMpesaSeconds] = useState(0);
   const [mpesaStage, setMpesaStage] = useState<"sending" | "waiting" | "confirming">("sending");
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [numberCopied, setNumberCopied] = useState(false);
+  const [placingOrder, setPlacingOrder] = useState(false);
+  const [createdOrderRef, setCreatedOrderRef] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -178,7 +196,14 @@ function CheckoutInner() {
           const data = await res.json();
           const p = data.products.find((x: { id: string }) => x.id === productId);
           if (!p) throw new Error("Product not found.");
-          setItem({ kind: "CATALOG", id: p.id, name: p.name, image: p.image, priceCents: p.priceCents });
+          setItem({
+            kind: "CATALOG",
+            id: p.id,
+            name: p.name,
+            image: p.image,
+            priceCents: p.priceCents,
+            artisan: p.artisan ?? null,
+          });
         } else if (source === "CUSTOM_DESIGN" && designId) {
           const res = await fetch("/api/designs/" + designId);
           if (res.ok) {
@@ -212,7 +237,7 @@ function CheckoutInner() {
 
   // Creates the real order record. Returns the order on success, or null
   // after routing the user back to the payment step with an error.
-  async function placeOrder(): Promise<{ reference: string } | null> {
+  async function placeOrder(paymentMethodOverride?: string): Promise<{ reference: string } | null> {
     if (!item) return null;
     const res = await fetch("/api/orders", {
       method: "POST",
@@ -225,7 +250,7 @@ function CheckoutInner() {
         customerName: fullName,
         customerEmail: email,
         customerPhone: phone,
-        paymentMethod: method,
+        paymentMethod: paymentMethodOverride ?? method,
         channel: "ONLINE",
       }),
     });
@@ -236,6 +261,34 @@ function CheckoutInner() {
       return null;
     }
     return data.order;
+  }
+
+  // Catalog (non-AI) products: payment happens entirely outside the app —
+  // the customer pays the artisan's own M-Pesa number directly, so there's
+  // no platform-mediated STK push to simulate. The order is created the
+  // moment they move past Details, regardless of any payment confirmation —
+  // the payment screen that follows just shows them who to pay and how.
+  async function handleDetailsSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (item?.kind === "CATALOG") {
+      setPlacingOrder(true);
+      const order = await placeOrder("mpesa_direct");
+      setPlacingOrder(false);
+      if (order) setCreatedOrderRef(order.reference);
+      setStep("payment");
+    } else {
+      setStep("payment");
+    }
+  }
+
+  async function copyArtisanPhone(phoneNumber: string) {
+    try {
+      await navigator.clipboard.writeText(phoneNumber);
+      setNumberCopied(true);
+      setTimeout(() => setNumberCopied(false), 2000);
+    } catch {
+      // ignore — the number is still shown and tappable
+    }
   }
 
   async function runMpesaFlow() {
@@ -296,6 +349,7 @@ function CheckoutInner() {
   }
 
   const brand = cardBrand(cardNumber);
+  const artisan = item.kind === "CATALOG" ? item.artisan : null;
 
   return (
     <main className="flex-1 bg-onyx">
@@ -310,13 +364,7 @@ function CheckoutInner() {
         <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_340px] lg:gap-10">
           <div className="rounded-2xl border border-gold-soft/15 bg-white/[0.03] p-6 sm:p-8">
             {step === "details" && (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  setStep("payment");
-                }}
-                className="flex flex-col gap-5"
-              >
+              <form onSubmit={handleDetailsSubmit} className="flex flex-col gap-5">
                 <h2 className="font-display text-lg font-semibold text-cream">Your details</h2>
                 <label className="flex flex-col gap-1.5">
                   <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-cream/50">
@@ -341,11 +389,30 @@ function CheckoutInner() {
                     className="rounded-xl border-2 border-cream/15 bg-white/5 px-3.5 py-3 text-sm text-cream outline-none focus:border-gold"
                   />
                 </label>
+                <label className="flex flex-col gap-1.5">
+                  <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-cream/50">
+                    <Phone size={12} /> Phone
+                  </span>
+                  <input
+                    required
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="07XX XXX XXX"
+                    className="rounded-xl border-2 border-cream/15 bg-white/5 px-3.5 py-3 text-sm text-cream outline-none focus:border-gold"
+                  />
+                </label>
                 <button
                   type="submit"
-                  className="mt-2 flex w-fit items-center gap-2 rounded-full bg-gold px-6 py-3 text-sm font-semibold text-onyx shadow-lg shadow-gold/20 transition-transform hover:scale-[1.02]"
+                  disabled={placingOrder}
+                  className="mt-2 flex w-fit items-center gap-2 rounded-full bg-gold px-6 py-3 text-sm font-semibold text-onyx shadow-lg shadow-gold/20 transition-transform hover:scale-[1.02] disabled:opacity-70"
                 >
-                  Continue to payment
+                  {placingOrder ? (
+                    <>
+                      <Spinner size={15} /> Placing your order…
+                    </>
+                  ) : (
+                    "Continue"
+                  )}
                 </button>
               </form>
             )}
@@ -358,12 +425,87 @@ function CheckoutInner() {
                 >
                   <ChevronLeft size={14} /> Back to details
                 </button>
-                <h2 className="font-display text-lg font-semibold text-cream">Payment method</h2>
+                <h2 className="font-display text-lg font-semibold text-cream">
+                  {item.kind === "CATALOG" ? "Pay the artisan directly" : "Payment method"}
+                </h2>
 
                 {submitError && (
                   <p className="rounded-lg bg-clay/15 px-3 py-2 text-xs font-medium text-clay">{submitError}</p>
                 )}
 
+                {item.kind === "CATALOG" ? (
+                  artisan ? (
+                    <div className="flex flex-col gap-5">
+                      {createdOrderRef && (
+                        <p className="flex items-center gap-2 rounded-xl border border-forest/30 bg-forest/10 px-4 py-3 text-xs text-cream/80">
+                          <Check size={14} className="shrink-0 text-forest" />
+                          Order <strong className="text-cream">{createdOrderRef}</strong> placed — pay{" "}
+                          {artisan.name.split(" ")[0]} directly below.
+                        </p>
+                      )}
+
+                      <div className="flex items-center gap-4 rounded-xl border border-gold-soft/15 bg-white/5 p-4">
+                        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={artisan.photo} alt={artisan.name} className="h-full w-full object-cover" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wide text-cream/40">This product belongs to</p>
+                          <p className="font-display text-base font-semibold text-cream">{artisan.name}</p>
+                          <p className="text-xs text-cream/60">
+                            {artisan.craft} &middot; {artisan.cooperative}
+                          </p>
+                          <p className="text-[11px] text-cream/40">{artisan.county}</p>
+                        </div>
+                      </div>
+
+                      {artisan.phone ? (
+                        <div className="rounded-xl border border-[#4CAF2E]/25 bg-[#4CAF2E]/5 p-5 text-center">
+                          <p className="flex items-center justify-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-[#4CAF2E]">
+                            <MpesaBadge size={14} /> Pay via M-Pesa
+                          </p>
+                          <a
+                            href={`tel:${artisan.phone.replace(/\s/g, "")}`}
+                            className="mt-3 block font-display text-2xl font-semibold text-cream transition-colors hover:text-[#4CAF2E]"
+                          >
+                            {artisan.phone}
+                          </a>
+                          <p className="mt-1 text-xs text-cream/50">Tap to call, or dial it manually on your phone</p>
+                          <button
+                            type="button"
+                            onClick={() => copyArtisanPhone(artisan.phone!)}
+                            className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-cream/15 px-3.5 py-1.5 text-xs font-semibold text-cream/70 transition-colors hover:border-cream/30 hover:text-cream"
+                          >
+                            <Copy size={12} /> {numberCopied ? "Copied" : "Copy number"}
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="rounded-xl border border-cream/15 bg-white/5 px-4 py-3 text-xs text-cream/60">
+                          Contact details for this artisan aren&apos;t available yet — reach out via staff to
+                          arrange payment.
+                        </p>
+                      )}
+
+                      <p className="rounded-xl border border-gold-soft/15 bg-white/5 px-4 py-3 text-xs leading-relaxed text-cream/60">
+                        Send <strong className="text-cream">{formatKES(total)}</strong> via M-Pesa &ldquo;Send
+                        Money&rdquo; to the number above — every shilling goes straight to the artisan who made
+                        this piece.
+                      </p>
+
+                      <Link
+                        href={createdOrderRef ? `/orders/${createdOrderRef}` : "#"}
+                        className="flex items-center justify-center gap-2 rounded-full bg-gold px-6 py-3.5 text-sm font-semibold text-onyx shadow-lg shadow-gold/20 transition-transform hover:scale-[1.01]"
+                      >
+                        <ShieldCheck size={16} /> View my order status
+                      </Link>
+                    </div>
+                  ) : (
+                    <p className="rounded-xl border border-clay/20 bg-clay/5 px-4 py-3 text-xs text-clay">
+                      This product doesn&apos;t have an assigned artisan yet — please contact support.
+                    </p>
+                  )
+                ) : (
+                  <>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => setMethod("mpesa")}
@@ -492,6 +634,8 @@ function CheckoutInner() {
                     </button>
                   </form>
                 )}
+                  </>
+                )}
               </div>
             )}
 
@@ -572,6 +716,7 @@ function CheckoutInner() {
             )}
           </div>
 
+          <div className="flex flex-col gap-6">
           <div className="h-fit rounded-2xl border border-gold-soft/15 bg-white/[0.03] p-6">
             <h2 className="font-display text-lg font-semibold text-cream">Order summary</h2>
             <div className="mt-4 flex items-center gap-3">
@@ -608,6 +753,32 @@ function CheckoutInner() {
               <ShieldCheck size={15} className="text-gold-soft" />
               Order is saved to the production database once payment confirms.
             </div>
+          </div>
+
+          {item.kind === "CATALOG" && item.artisan && (
+            <div className="h-fit rounded-2xl border border-gold-soft/15 bg-white/[0.03] p-6 text-center">
+              <p className="flex items-center justify-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-gold-soft/80">
+                <QrCode size={13} /> Meet the maker
+              </p>
+              <div className="mx-auto mt-4 w-fit overflow-hidden rounded-xl border border-gold-soft/20 bg-white p-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`/api/artisans/${item.artisan.id}/qr`}
+                  alt={`QR code for ${item.artisan.name}'s profile`}
+                  width={140}
+                  height={140}
+                  className="h-[140px] w-[140px]"
+                />
+              </div>
+              <p className="mt-3 text-sm font-semibold text-cream">{item.artisan.name}</p>
+              <p className="mt-0.5 text-xs text-cream/60">
+                {item.artisan.craft} &middot; {item.artisan.cooperative}
+              </p>
+              <p className="mt-3 text-[11px] leading-relaxed text-cream/50">
+                Scan to see {item.artisan.name.split(" ")[0]}&apos;s full profile and story.
+              </p>
+            </div>
+          )}
           </div>
         </div>
       </div>

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Inbox, ArrowRight, RefreshCcw, Sparkles, Gem } from "lucide-react";
+import { Inbox, ArrowRight, RefreshCcw, Sparkles, Gem, Activity } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Spinner } from "@/components/Spinner";
@@ -66,6 +66,9 @@ export default function IncomingOrdersPage() {
   const [accepting, setAccepting] = useState<string | null>(null);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [newIds, setNewIds] = useState<Set<string>>(new Set());
+  const [liveFlash, setLiveFlash] = useState(false);
+  const [flashKey, setFlashKey] = useState(0);
+  const [signalSpike, setSignalSpike] = useState(false);
   const seenIds = useRef<Set<string> | null>(null);
 
   function dismissToast(id: string) {
@@ -85,6 +88,13 @@ export default function IncomingOrdersPage() {
       const arrivals = fresh.filter((o) => !seenIds.current!.has(o.id));
       if (arrivals.length > 0) {
         playChime();
+        // "Live wire" effect — a staff member watching this screen should
+        // see the arrival land, not just notice a toast after the fact.
+        setLiveFlash(true);
+        setFlashKey((k) => k + 1);
+        setTimeout(() => setLiveFlash(false), 1100);
+        setSignalSpike(true);
+        setTimeout(() => setSignalSpike(false), 500);
         setToasts((t) => [
           ...t,
           ...arrivals.map((o) => ({
@@ -144,6 +154,15 @@ export default function IncomingOrdersPage() {
       {/* Live arrival toasts */}
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
 
+      {/* Live-wire flash — fires the instant an order lands, screen-wide */}
+      {liveFlash && (
+        <div
+          key={flashKey}
+          className="sanaa-live-flash pointer-events-none fixed inset-0 z-[55]"
+          style={{ boxShadow: "inset 0 0 0 4px rgba(198,138,46,0.85), inset 0 0 90px rgba(198,138,46,0.4)" }}
+        />
+      )}
+
       <main className="flex-1 bg-cream">
         <section className="border-b border-sand-deep bg-charcoal py-10 text-cream">
           <div className="mx-auto max-w-6xl px-5 sm:px-8">
@@ -163,8 +182,16 @@ export default function IncomingOrdersPage() {
               {orders.length} new order{orders.length === 1 ? "" : "s"} waiting
             </p>
             <div className="flex items-center gap-2">
-              <span className="flex items-center gap-1.5 text-[11px] text-ink-muted">
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-forest" /> Live
+              <span
+                className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                  signalSpike ? "border-forest bg-forest/10 text-forest" : "border-sand-deep text-ink-muted"
+                }`}
+              >
+                <Activity
+                  size={13}
+                  className={signalSpike ? "sanaa-live-spike text-forest" : "text-forest/70"}
+                />
+                Live
               </span>
               <button
                 onClick={load}

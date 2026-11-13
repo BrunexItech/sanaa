@@ -65,7 +65,13 @@ export async function POST(req: Request) {
       events: {
         create: [
           { status: "PENDING_PAYMENT", note: "Order placed, awaiting payment confirmation." },
-          { status: "CONFIRMED", note: "Payment confirmed via simulated " + paymentMethod.toUpperCase() + "." },
+          {
+            status: "CONFIRMED",
+            note:
+              paymentMethod === "mpesa_direct"
+                ? "Customer confirmed sending payment directly to the artisan via M-Pesa."
+                : "Payment confirmed via simulated " + paymentMethod.toUpperCase() + ".",
+          },
         ],
       },
     },

@@ -23,6 +23,7 @@ async function main() {
       members: 32,
       photo: "/images/artisan-bead-woman.jpg",
       cover: "/images/hero-community.jpg",
+      phone: "0712 345 601",
     },
   });
 
@@ -37,6 +38,7 @@ async function main() {
       members: 32,
       photo: "/images/artisan-portrait-woman.jpg",
       cover: "/images/craft-market-wide.jpg",
+      phone: "0712 345 602",
     },
   });
 
@@ -51,6 +53,7 @@ async function main() {
       members: 18,
       photo: "/images/artisan-woodcarver.jpg",
       cover: "/images/stall-colorful.jpg",
+      phone: "0712 345 603",
     },
   });
 
