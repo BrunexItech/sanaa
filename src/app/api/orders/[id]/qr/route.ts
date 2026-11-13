@@ -3,9 +3,9 @@ import QRCode from "qrcode";
 import { prisma } from "@/lib/db";
 import { resolveSiteOrigin } from "@/lib/qr";
 
-// Encodes the order's own tracking URL — scanning it (e.g. at pickup, or on
-// a printed tag) opens the same live-updating page, which shows the order
-// reference, the artisan's cooperative/group, and the maker's story.
+// Encodes the maker-reveal page, not the order tracking page itself — the
+// artisan's name, cooperative and story are deliberately not shown on the
+// order page by default; scanning this QR is the only way to reach them.
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -18,9 +18,9 @@ export async function GET(
   if (!order) return NextResponse.json({ error: "Order not found." }, { status: 404 });
 
   const origin = resolveSiteOrigin(req);
-  const trackingUrl = `${origin}/orders/${order.reference}`;
+  const makerUrl = `${origin}/orders/${order.reference}/maker`;
 
-  const png = await QRCode.toBuffer(trackingUrl, {
+  const png = await QRCode.toBuffer(makerUrl, {
     width: 320,
     margin: 4,
     errorCorrectionLevel: "M",

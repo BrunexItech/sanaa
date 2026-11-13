@@ -11,7 +11,6 @@ import {
   Truck,
   ArrowRight,
   QrCode,
-  Users,
 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -103,11 +102,6 @@ export default function OrderStatusPage({ params }: { params: Promise<{ referenc
                       : "Order"}{" "}
                     &middot; {formatKES(order.totalCents)}
                   </p>
-                  {order.artisan && (
-                    <p className="mt-1 text-xs text-ink-muted">
-                      Assigned to {order.artisan.name} &middot; {order.artisan.cooperative}
-                    </p>
-                  )}
 
                   <div className="mt-8 flex flex-col gap-0">
                     {STAGES.map((stage, i) => {
@@ -177,13 +171,13 @@ export default function OrderStatusPage({ params }: { params: Promise<{ referenc
               <div className="flex flex-col gap-6">
                 <div className="rounded-3xl border border-sand-deep bg-white p-6 text-center">
                   <p className="flex items-center justify-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-ink-muted">
-                    <QrCode size={13} /> Scan for her story
+                    <QrCode size={13} /> Meet the maker
                   </p>
                   <div className="mx-auto mt-4 w-fit overflow-hidden rounded-2xl border border-sand-deep p-2">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={`/api/orders/${order.reference}/qr`}
-                      alt={`QR code for order ${order.reference}`}
+                      alt="QR code — scan to meet the maker"
                       width={160}
                       height={160}
                       className="h-40 w-40"
@@ -191,38 +185,9 @@ export default function OrderStatusPage({ params }: { params: Promise<{ referenc
                   </div>
                   <p className="mt-3 font-display text-sm font-semibold text-charcoal">{order.reference}</p>
                   <p className="mt-2 text-[11px] leading-relaxed text-ink-muted">
-                    Scan to see exactly who made this piece — her name, her cooperative, and her story.
+                    Scan with your phone to see who made this piece — her name, her cooperative, and her story.
                   </p>
                 </div>
-
-                {order.artisan && (
-                  <div className="overflow-hidden rounded-3xl border border-sand-deep bg-white">
-                    <div className="relative h-40 w-full">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={order.artisan.photo} alt={order.artisan.name} className="h-full w-full object-cover" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-onyx/80 via-onyx/10 to-transparent" />
-                      <p className="absolute bottom-3 left-5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-gold-soft">
-                        <Users size={11} /> Made by
-                      </p>
-                    </div>
-                    <div className="p-6">
-                      <h2 className="font-display text-xl font-semibold text-charcoal">{order.artisan.name}</h2>
-                      <p className="mt-1 text-sm font-medium text-clay-dark">
-                        {order.artisan.craft} &middot; {order.artisan.cooperative}
-                      </p>
-                      <p className="mt-0.5 text-xs text-ink-muted">
-                        {order.artisan.county} &middot; {order.artisan.years} years of craft
-                      </p>
-                      <p className="mt-4 text-sm leading-relaxed text-charcoal-soft">{order.artisan.bio}</p>
-                      <Link
-                        href={`/artisans/${order.artisan.id}`}
-                        className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-clay"
-                      >
-                        Full profile <ArrowRight size={12} />
-                      </Link>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           )}
