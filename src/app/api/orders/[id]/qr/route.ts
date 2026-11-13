@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import QRCode from "qrcode";
 import { prisma } from "@/lib/db";
+import { resolveSiteOrigin } from "@/lib/qr";
 
 // Encodes the order's own tracking URL — scanning it (e.g. at pickup, or on
 // a printed tag) opens the same live-updating page, which shows the order
@@ -16,12 +17,13 @@ export async function GET(
   });
   if (!order) return NextResponse.json({ error: "Order not found." }, { status: 404 });
 
-  const origin = new URL(req.url).origin;
+  const origin = resolveSiteOrigin(req);
   const trackingUrl = `${origin}/orders/${order.reference}`;
 
   const png = await QRCode.toBuffer(trackingUrl, {
     width: 320,
-    margin: 2,
+    margin: 4,
+    errorCorrectionLevel: "M",
     color: { dark: "#15110D", light: "#FAF8F4" },
   });
 

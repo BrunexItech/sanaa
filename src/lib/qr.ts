@@ -1,3 +1,14 @@
+// Behind a reverse proxy, a request's own Host header can't always be
+// trusted to reflect the real public domain — if it's wrong, every QR code
+// gets encoded pointing at an internal/unreachable address and silently
+// fails to open when scanned, even though the QR image itself is fine.
+// SITE_URL, when set, always wins; req.url's origin is only a dev fallback.
+export function resolveSiteOrigin(req: Request) {
+  const configured = process.env.SITE_URL?.trim().replace(/\/+$/, "");
+  if (configured) return configured;
+  return new URL(req.url).origin;
+}
+
 export const QR_JOURNEYS = [
   {
     id: "UNDERSTANDING_USHANGA",

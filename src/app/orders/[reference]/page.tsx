@@ -36,7 +36,7 @@ type Order = {
   createdAt: string;
   product: { name: string } | null;
   customDesign: { itemType: string; colorway: string; patternStyle: string } | null;
-  artisan: { id: string; name: string; cooperative: string; bio: string; photo: string } | null;
+  artisan: { id: string; name: string; craft: string; county: string; years: number; cooperative: string; bio: string; photo: string } | null;
   events: { status: string; note: string | null; createdAt: string }[];
 };
 
@@ -173,11 +173,40 @@ export default function OrderStatusPage({ params }: { params: Promise<{ referenc
                 </Link>
               </div>
 
-              {/* ---------- Right: QR + maker story ---------- */}
+              {/* ---------- Right: maker story + QR ---------- */}
               <div className="flex flex-col gap-6">
+                {order.artisan && (
+                  <div className="overflow-hidden rounded-3xl border border-sand-deep bg-white">
+                    <div className="relative h-40 w-full">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={order.artisan.photo} alt={order.artisan.name} className="h-full w-full object-cover" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-onyx/80 via-onyx/10 to-transparent" />
+                      <p className="absolute bottom-3 left-5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-gold-soft">
+                        <Users size={11} /> Made by
+                      </p>
+                    </div>
+                    <div className="p-6">
+                      <h2 className="font-display text-xl font-semibold text-charcoal">{order.artisan.name}</h2>
+                      <p className="mt-1 text-sm font-medium text-clay-dark">
+                        {order.artisan.craft} &middot; {order.artisan.cooperative}
+                      </p>
+                      <p className="mt-0.5 text-xs text-ink-muted">
+                        {order.artisan.county} &middot; {order.artisan.years} years of craft
+                      </p>
+                      <p className="mt-4 text-sm leading-relaxed text-charcoal-soft">{order.artisan.bio}</p>
+                      <Link
+                        href={`/artisans/${order.artisan.id}`}
+                        className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-clay"
+                      >
+                        Full profile <ArrowRight size={12} />
+                      </Link>
+                    </div>
+                  </div>
+                )}
+
                 <div className="rounded-3xl border border-sand-deep bg-white p-6 text-center">
                   <p className="flex items-center justify-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-ink-muted">
-                    <QrCode size={13} /> Scan to track
+                    <QrCode size={13} /> Scan to revisit
                   </p>
                   <div className="mx-auto mt-4 w-fit overflow-hidden rounded-2xl border border-sand-deep p-2">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -190,38 +219,10 @@ export default function OrderStatusPage({ params }: { params: Promise<{ referenc
                     />
                   </div>
                   <p className="mt-3 font-display text-sm font-semibold text-charcoal">{order.reference}</p>
-                  {order.artisan && (
-                    <p className="mt-1 text-xs text-ink-muted">{order.artisan.cooperative}</p>
-                  )}
-                  <p className="mt-3 text-[11px] leading-relaxed text-ink-muted">
-                    Scan to reopen this tracking page on any device.
+                  <p className="mt-2 text-[11px] leading-relaxed text-ink-muted">
+                    Opens this page — order status and the maker&apos;s story — on any device.
                   </p>
                 </div>
-
-                {order.artisan && (
-                  <div className="rounded-3xl border border-sand-deep bg-white p-6">
-                    <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-ink-muted">
-                      <Users size={13} /> Meet the maker
-                    </p>
-                    <div className="mt-3 flex items-center gap-3">
-                      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={order.artisan.photo} alt={order.artisan.name} className="h-full w-full object-cover" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-charcoal">{order.artisan.name}</p>
-                        <p className="text-xs text-clay-dark">{order.artisan.cooperative}</p>
-                      </div>
-                    </div>
-                    <p className="mt-3 text-xs leading-relaxed text-charcoal-soft">{order.artisan.bio}</p>
-                    <Link
-                      href={`/artisans/${order.artisan.id}`}
-                      className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-clay"
-                    >
-                      Full profile <ArrowRight size={12} />
-                    </Link>
-                  </div>
-                )}
               </div>
             </div>
           )}

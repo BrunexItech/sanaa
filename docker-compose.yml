@@ -20,6 +20,7 @@ services:
     environment:
       DATABASE_URL: postgresql://ushanga:ushanga@postgres:5432/ushanga
       NODE_ENV: production
+      SITE_URL: ${SITE_URL}
     depends_on:
       postgres:
         condition: service_healthy
