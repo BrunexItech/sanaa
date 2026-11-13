@@ -16,6 +16,11 @@ const STAT_ITEMS = [
   { icon: Glasses, label: "Virtual\nExperiences" },
 ];
 
+// This page depends on live database content — never prerender/cache it,
+// otherwise a build-time snapshot (e.g. an empty DB during `docker build`)
+// gets served forever regardless of real data.
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   const dbProducts = await prisma.product.findMany({
     include: { artisan: true },
@@ -200,55 +205,57 @@ export default async function Home() {
         </section>
 
         {/* Artisan spotlight */}
-        <section className="mx-auto max-w-7xl px-5 py-20 sm:px-8">
-          <Reveal>
-          <span className="text-xs font-semibold uppercase tracking-widest text-forest">
-            Artisan spotlight
-          </span>
-          <div className="mt-6 grid gap-10 lg:grid-cols-2 lg:items-center">
-            <div className="relative aspect-[4/3] overflow-hidden rounded-3xl">
-              <Image
-                src={spotlightArtisan!.cover}
-                alt={spotlightArtisan!.name}
-                fill
-                sizes="(min-width: 1024px) 45vw, 90vw"
-                className="object-cover"
-              />
-            </div>
-            <div>
-              <h3 className="font-display text-3xl font-semibold text-charcoal">
-                {spotlightArtisan!.name}
-              </h3>
-              <p className="mt-1 text-sm font-medium text-clay">
-                {spotlightArtisan!.craft} &middot; {spotlightArtisan!.county}
-              </p>
-              <p className="mt-5 text-base leading-relaxed text-charcoal-soft">
-                {spotlightArtisan!.bio}
-              </p>
-              <div className="mt-6 flex gap-8">
-                <div>
-                  <p className="font-display text-2xl font-semibold text-charcoal">
-                    {spotlightArtisan!.years}
-                  </p>
-                  <p className="text-xs uppercase tracking-wide text-ink-muted">Years of craft</p>
-                </div>
-                <div>
-                  <p className="font-display text-2xl font-semibold text-charcoal">
-                    {spotlightArtisan!.members}
-                  </p>
-                  <p className="text-xs uppercase tracking-wide text-ink-muted">Collective members</p>
-                </div>
+        {spotlightArtisan && (
+          <section className="mx-auto max-w-7xl px-5 py-20 sm:px-8">
+            <Reveal>
+            <span className="text-xs font-semibold uppercase tracking-widest text-forest">
+              Artisan spotlight
+            </span>
+            <div className="mt-6 grid gap-10 lg:grid-cols-2 lg:items-center">
+              <div className="relative aspect-[4/3] overflow-hidden rounded-3xl">
+                <Image
+                  src={spotlightArtisan.cover}
+                  alt={spotlightArtisan.name}
+                  fill
+                  sizes="(min-width: 1024px) 45vw, 90vw"
+                  className="object-cover"
+                />
               </div>
-              <Link
-                href={`/artisans/${spotlightArtisan!.id}`}
-                className="mt-7 inline-flex items-center gap-2 rounded-full bg-charcoal px-6 py-3 text-sm font-semibold text-cream"
-              >
-                View profile <ArrowRight size={15} />
-              </Link>
+              <div>
+                <h3 className="font-display text-3xl font-semibold text-charcoal">
+                  {spotlightArtisan.name}
+                </h3>
+                <p className="mt-1 text-sm font-medium text-clay">
+                  {spotlightArtisan.craft} &middot; {spotlightArtisan.county}
+                </p>
+                <p className="mt-5 text-base leading-relaxed text-charcoal-soft">
+                  {spotlightArtisan.bio}
+                </p>
+                <div className="mt-6 flex gap-8">
+                  <div>
+                    <p className="font-display text-2xl font-semibold text-charcoal">
+                      {spotlightArtisan.years}
+                    </p>
+                    <p className="text-xs uppercase tracking-wide text-ink-muted">Years of craft</p>
+                  </div>
+                  <div>
+                    <p className="font-display text-2xl font-semibold text-charcoal">
+                      {spotlightArtisan.members}
+                    </p>
+                    <p className="text-xs uppercase tracking-wide text-ink-muted">Collective members</p>
+                  </div>
+                </div>
+                <Link
+                  href={`/artisans/${spotlightArtisan.id}`}
+                  className="mt-7 inline-flex items-center gap-2 rounded-full bg-charcoal px-6 py-3 text-sm font-semibold text-cream"
+                >
+                  View profile <ArrowRight size={15} />
+                </Link>
+              </div>
             </div>
-          </div>
-          </Reveal>
-        </section>
+            </Reveal>
+          </section>
+        )}
 
         {/* Trust strip */}
         <section className="bg-forest py-16 text-cream">

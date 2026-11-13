@@ -5,6 +5,8 @@ import { Footer } from "@/components/Footer";
 import { PatternBorder } from "@/components/PatternBorder";
 import { prisma } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+
 export default async function ArtisansPage() {
   const artisans = await prisma.artisan.findMany({ where: { active: true } });
 

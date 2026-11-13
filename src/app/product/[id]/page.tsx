@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { ProductDetailClient } from "./ProductDetailClient";
 
+
 export default async function ProductPage({
   params,
 }: {

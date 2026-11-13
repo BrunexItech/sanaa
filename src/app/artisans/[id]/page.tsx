@@ -5,6 +5,7 @@ import { Footer } from "@/components/Footer";
 import { ProductCard } from "@/components/ProductCard";
 import { prisma } from "@/lib/db";
 
+
 export default async function ArtisanPage({
   params,
 }: {
