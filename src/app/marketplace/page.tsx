@@ -2,7 +2,6 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
 import { Search, ArrowUpDown, ArrowRight, Gem } from "lucide-react";
 import { Header } from "@/components/Header";
@@ -10,7 +9,6 @@ import { Footer } from "@/components/Footer";
 import { ProductCard } from "@/components/ProductCard";
 import { SkeletonBlock } from "@/components/Spinner";
 import { PatternBorder } from "@/components/PatternBorder";
-import { img } from "@/lib/images";
 
 type SortKey = "featured" | "price-asc" | "price-desc" | "rating";
 
@@ -65,30 +63,46 @@ function MarketplaceContent() {
     <>
       <Header />
       <main className="flex-1 bg-sand">
-        <div className="bg-onyx px-5 py-14 sm:px-8">
-          <div className="mx-auto max-w-7xl">
-            <p className="text-xs text-cream/50">
-              <Link href="/" className="hover:text-cream">Home</Link> &middot; Marketplace
-            </p>
-            <h1 className="mt-2 font-display text-4xl font-semibold text-cream">
-              Ushanga Marketplace
-            </h1>
-            <p className="mt-1 text-sm text-gold-soft">Authentic. Ethical. Timeless.</p>
+        <div className="bg-onyx px-5 py-8 sm:px-8">
+          <div className="mx-auto flex max-w-7xl flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-xl">
+              <p className="text-xs text-cream/50">
+                <Link href="/" className="hover:text-cream">Home</Link> &middot; Marketplace
+              </p>
+              <h1 className="mt-2 font-display text-3xl font-semibold text-cream sm:text-4xl">
+                Ushanga Marketplace
+              </h1>
+              <p className="mt-1 text-sm text-gold-soft">Authentic. Ethical. Timeless.</p>
 
-            <div className="relative mt-6 max-w-xl">
-              <Search size={17} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search for handcrafted treasures…"
-                className="w-full rounded-full border border-white/10 bg-white py-3 pl-11 pr-4 text-sm text-charcoal outline-none focus:border-gold"
-              />
+              <div className="relative mt-5 max-w-xl">
+                <Search size={17} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search for handcrafted treasures…"
+                  className="w-full rounded-full border border-white/10 bg-white py-3 pl-11 pr-4 text-sm text-charcoal outline-none focus:border-gold"
+                />
+              </div>
+            </div>
+
+            <div className="relative flex shrink-0 items-center gap-4 overflow-hidden rounded-2xl border border-gold/20 bg-white/5 px-5 py-4 lg:max-w-xs">
+              <Gem size={24} className="shrink-0 text-gold-soft" />
+              <div className="flex-1">
+                <p className="font-display text-sm font-semibold text-cream">Can&apos;t find what you want?</p>
+                <p className="mt-0.5 text-xs text-cream/70">Design your own piece.</p>
+              </div>
+              <Link
+                href="/design"
+                className="flex shrink-0 items-center gap-1.5 rounded-full bg-gold px-4 py-2.5 text-xs font-semibold text-onyx transition-transform hover:scale-[1.02]"
+              >
+                Design <ArrowRight size={13} />
+              </Link>
             </div>
           </div>
         </div>
         <PatternBorder color="#C68A2E" bg="#15110D" height={6} />
 
-        <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8">
+        <div className="mx-auto max-w-7xl px-5 py-6 sm:px-8">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap gap-2">
               {["All", ...categories].map((cat) => (
@@ -120,7 +134,7 @@ function MarketplaceContent() {
             </label>
           </div>
 
-          <div className="mt-10 grid grid-cols-2 gap-5 lg:grid-cols-4">
+          <div className="mt-6 grid grid-cols-2 gap-5 lg:grid-cols-4">
             {loading
               ? Array.from({ length: 8 }).map((_, i) => (
                   <SkeletonBlock key={i} className="aspect-[4/5] w-full" />
@@ -156,25 +170,6 @@ function MarketplaceContent() {
               No pieces match your search. Try another category or keyword.
             </p>
           )}
-
-          <div className="relative mt-14 flex flex-col items-center gap-4 overflow-hidden rounded-3xl bg-forest px-6 py-10 text-center sm:flex-row sm:justify-between sm:text-left">
-            <div className="absolute inset-0 opacity-25">
-              <Image src={img.artisanBeadwoman} alt="" fill className="object-cover object-[65%_18%]" />
-            </div>
-            <div className="relative z-10 flex items-center gap-3 text-cream">
-              <Gem size={22} className="shrink-0 text-gold-soft" />
-              <div>
-                <p className="font-display text-lg font-semibold">Can&apos;t find what you want?</p>
-                <p className="text-sm text-cream/75">Design your own unique piece with our virtual design studio.</p>
-              </div>
-            </div>
-            <Link
-              href="/design"
-              className="relative z-10 flex shrink-0 items-center gap-2 rounded-full bg-gold px-6 py-3 text-sm font-semibold text-onyx transition-transform hover:scale-[1.02]"
-            >
-              Start Designing <ArrowRight size={15} />
-            </Link>
-          </div>
         </div>
       </main>
       <Footer />
