@@ -77,8 +77,8 @@ async function main() {
       slug: "layered-strand-necklace",
       category: "Necklaces",
       priceCents: 450000,
-      image: "/images/product-necklace-3.jpg",
-      gallery: ["/images/product-necklace-3.jpg"],
+      image: "/images/product-woven-cuff.jpg",
+      gallery: ["/images/product-woven-cuff.jpg"],
       description:
         "Multiple strands of hand-rolled glass beads in a warm multicolour sequence, finished with a sliding brass clasp for adjustable length.",
       story:

@@ -63,44 +63,45 @@ function MarketplaceContent() {
     <>
       <Header />
       <main className="flex-1 bg-sand">
-        <div className="bg-onyx px-5 py-8 sm:px-8">
-          <div className="mx-auto flex max-w-7xl flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div className="max-w-xl">
-              <p className="text-xs text-cream/50">
+        <div className="bg-onyx px-5 py-5 sm:px-8">
+          <div className="mx-auto flex max-w-7xl flex-col gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-8">
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] text-cream/50">
                 <Link href="/" className="hover:text-cream">Home</Link> &middot; Marketplace
               </p>
-              <h1 className="mt-2 font-display text-3xl font-semibold text-cream sm:text-4xl">
-                Ushanga Marketplace
-              </h1>
-              <p className="mt-1 text-sm text-gold-soft">Authentic. Ethical. Timeless.</p>
+              <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+                <h1 className="font-display text-2xl font-semibold text-cream sm:text-3xl">
+                  Ushanga Marketplace
+                </h1>
+                <p className="text-xs text-gold-soft">Authentic. Ethical. Timeless.</p>
+              </div>
 
-              <div className="relative mt-5 max-w-xl">
-                <Search size={17} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" />
+              <div className="relative mt-3 max-w-lg">
+                <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted" />
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search for handcrafted treasures…"
-                  className="w-full rounded-full border border-white/10 bg-white py-3 pl-11 pr-4 text-sm text-charcoal outline-none focus:border-gold"
+                  className="w-full rounded-full border border-white/10 bg-white py-2.5 pl-10 pr-4 text-sm text-charcoal outline-none focus:border-gold"
                 />
               </div>
             </div>
 
-            <div className="relative flex shrink-0 items-center gap-4 overflow-hidden rounded-2xl border border-gold/20 bg-white/5 px-5 py-4 lg:max-w-xs">
-              <Gem size={24} className="shrink-0 text-gold-soft" />
-              <div className="flex-1">
-                <p className="font-display text-sm font-semibold text-cream">Can&apos;t find what you want?</p>
-                <p className="mt-0.5 text-xs text-cream/70">Design your own piece.</p>
-              </div>
-              <Link
-                href="/design"
-                className="flex shrink-0 items-center gap-1.5 rounded-full bg-gold px-4 py-2.5 text-xs font-semibold text-onyx transition-transform hover:scale-[1.02]"
-              >
-                Design <ArrowRight size={13} />
-              </Link>
-            </div>
+            <Link
+              href="/design"
+              className="group flex shrink-0 items-center gap-3 rounded-full border border-gold/25 bg-white/5 py-2 pl-4 pr-2 transition-colors hover:border-gold/50"
+            >
+              <Gem size={16} className="shrink-0 text-gold-soft" />
+              <span className="whitespace-nowrap text-xs font-medium text-cream/85">
+                Can&apos;t find it? <span className="text-cream">Design your own</span>
+              </span>
+              <span className="flex shrink-0 items-center gap-1 rounded-full bg-gold px-3.5 py-2 text-xs font-semibold text-onyx transition-transform group-hover:scale-[1.04]">
+                Design <ArrowRight size={12} />
+              </span>
+            </Link>
           </div>
         </div>
-        <PatternBorder color="#C68A2E" bg="#15110D" height={6} />
+        <PatternBorder color="#C68A2E" bg="#15110D" height={5} />
 
         <div className="mx-auto max-w-7xl px-5 py-6 sm:px-8">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -134,9 +135,9 @@ function MarketplaceContent() {
             </label>
           </div>
 
-          <div className="mt-6 grid grid-cols-2 gap-5 lg:grid-cols-4">
+          <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             {loading
-              ? Array.from({ length: 8 }).map((_, i) => (
+              ? Array.from({ length: 10 }).map((_, i) => (
                   <SkeletonBlock key={i} className="aspect-[4/5] w-full" />
                 ))
               : filtered.map((p) => (
