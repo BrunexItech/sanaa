@@ -22,17 +22,31 @@ const ITEM_LABELS: Record<string, string> = {
   bagStrap: "a Maasai-style beaded bag strap",
 };
 
+// Shape guidance for the product shot itself. Most Maasai beadwork product
+// photography defaults to a circular flat-lay (the standard convention for
+// collars/necklaces) — fine for jewellery, but a belt laid out that way
+// photographs as a closed loop, which later biases the dressing step toward
+// the neck regardless of what the text says. Forcing a straight strap layout
+// for the belt fixes the problem at the source, not just downstream.
+const DESIGN_SHAPE: Partial<Record<string, string>> = {
+  belt: "Laid out fully straight and extended in a single straight line (never coiled, curled or arranged into a circle/loop), like a real leather belt photographed flat on a table, with the brass buckle clearly at one end.",
+};
+
 // Keeps every generation on-brand: authentic Kenyan beadwork product
 // photography, never a person, regardless of what the customer types.
 export function buildDesignPrompt(itemType: string, userPrompt: string) {
   const itemLabel = ITEM_LABELS[itemType] ?? "a piece of Maasai-style beaded jewellery";
   const safePrompt = userPrompt.trim().slice(0, 400);
+  const shape = DESIGN_SHAPE[itemType];
   return [
     `Professional product photograph of ${itemLabel}, handcrafted from small glass beads in the traditional Maasai style.`,
     `Customer's requested design: "${safePrompt}".`,
+    shape,
     "Studio product photography, soft natural light, clean neutral background, the beadwork in sharp focus, realistic bead texture and craftsmanship.",
     "No people, no hands, no body parts, no text or watermarks in the image — only the crafted item itself, as if photographed for a premium catalogue.",
-  ].join(" ");
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
 // Per-item framing for the "see it on you" model shot — each description is
@@ -82,11 +96,20 @@ export function buildModelEditPrompt(itemType: string, variant = 0) {
   const model = models[variant % models.length];
   const framingFn = MODEL_FRAMING[itemType] ?? (() => "a close-up fashion portrait");
   const framing = framingFn(pronoun);
+  const bodyPart = itemType === "belt" ? "waist" : itemType === "bracelet" ? "wrist" : itemType === "earrings" ? "ears" : itemType === "bagStrap" ? "shoulder" : "neck";
+  const leadWarning =
+    itemType === "belt"
+      ? `CRITICAL: the attached item is a WAIST BELT. It goes around the waist, over trousers, at the hips — never around the neck. A belt worn as a necklace is a wrong, failed result.`
+      : null;
   return [
+    leadWarning,
     `The attached image shows ${itemLabel}, an exact piece of real beadwork — the design, bead colours, pattern and craftsmanship in that image are final and must not be changed, redesigned, restyled or reinterpreted in any way.`,
     `Using that exact item, unaltered, generate a new photograph of ${model}, warm genuine smile, wearing it outdoors in the Maasai Mara savanna, soft natural daylight, acacia trees softly out of focus in the background.`,
     `Shot as ${framing}.`,
     `The item in the new photo must be visually identical to the attached reference image — same beads, same colours, same layout — only the camera angle, lighting and the fact that ${subject} is now wearing it should differ.`,
     "Realistic bead texture, premium editorial fashion photography. No text, no watermarks, no logos in the image.",
-  ].join(" ");
+    leadWarning ? `Reminder: this item belongs at ${pronoun} ${bodyPart}, not ${pronoun} neck.` : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
