@@ -15,7 +15,9 @@ export default async function ArtisanPage({
   const artisan = await prisma.artisan.findUnique({ where: { id } });
   if (!artisan) notFound();
 
-  const pieces = await prisma.product.findMany({ where: { artisanId: artisan.id } });
+  const pieces = await prisma.product.findMany({
+    where: { artisanId: artisan.id, storefront: "USHANGA" },
+  });
 
   return (
     <>

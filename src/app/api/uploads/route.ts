@@ -11,8 +11,10 @@ function slugify(name: string) {
   );
 }
 
+// This tool publishes straight into the Ushanga catalog — beadwork only.
 export async function GET() {
   const products = await prisma.product.findMany({
+    where: { storefront: "USHANGA" },
     orderBy: { createdAt: "desc" },
     take: 8,
     include: { artisan: { select: { name: true } } },
@@ -57,6 +59,7 @@ export async function POST(req: Request) {
       name,
       slug,
       category,
+      storefront: "USHANGA",
       priceCents: Math.round(Number(priceCents)),
       image: imageDataUrl,
       gallery: [imageDataUrl],

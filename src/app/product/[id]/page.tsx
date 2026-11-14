@@ -16,7 +16,7 @@ export default async function ProductPage({
   if (!product) notFound();
 
   const related = await prisma.product.findMany({
-    where: { category: product.category, id: { not: product.id } },
+    where: { category: product.category, storefront: product.storefront, id: { not: product.id } },
     include: { artisan: true },
     take: 4,
   });

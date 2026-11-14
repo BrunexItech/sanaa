@@ -30,6 +30,13 @@ enum OrderStatus {
   CANCELLED
 }
 
+// Which storefront a catalog product belongs to — Ushanga is beadwork-only;
+// Sanaa is the multi-craft master storefront and can carry everything else.
+enum Storefront {
+  USHANGA
+  SANAA
+}
+
 // The 5 QR visitor journeys from the Sekenani visitor-experience blueprint (section 10).
 enum QrJourney {
   UNDERSTANDING_USHANGA
@@ -74,6 +81,7 @@ model Product {
   name            String
   slug            String   @unique
   category        String
+  storefront      Storefront @default(USHANGA)
   priceCents      Int
   compareAtCents  Int?
   rating          Float    @default(4.5)

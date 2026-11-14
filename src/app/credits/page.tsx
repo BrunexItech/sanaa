@@ -23,6 +23,8 @@ const CREDITS = [
   { title: "Soapstone artistic carvings", license: "CC BY-SA 4.0" },
   { title: "An Masia Earring", license: "CC BY-SA 4.0" },
   { title: "In the making of beads (20)", license: "CC BY 4.0" },
+  { title: "Kenyan Necklace Beads", license: "CC0" },
+  { title: "Shanga za Kimasai", license: "CC BY-SA 4.0" },
 ];
 
 export default function CreditsPage() {

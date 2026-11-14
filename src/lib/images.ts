@@ -32,6 +32,9 @@ export const img = {
   productSoapstoneCurios: "/images/product-soapstone-curios.jpg",
   productMaraSunsetEarrings: "/images/product-mara-sunset-earrings.jpg",
   productSekenaniBelt: "/images/product-sekenani-belt.jpg",
+  productLayeredNecklaceReal: "/images/product-layered-necklace-real.jpg",
+  productAmaraBracelets: "/images/product-amara-bracelets.jpg",
+  productSekenaniCuff: "/images/product-sekenani-cuff.jpg",
 
   maasaiBeadworkOrnament: "/images/maasai-beadwork-ornament.jpg",
   artisanBeadingBeltFrame: "/images/artisan-beading-belt-frame.jpg",

@@ -9,14 +9,13 @@ import { Spinner } from "@/components/Spinner";
 import { formatKES } from "@/lib/configurator";
 import { useStaffProfile } from "@/lib/staffAuth";
 
+// Ushanga is a beadwork-only catalog — every piece published here lands
+// straight on the Ushanga site, so the category list only offers bead items.
 const CATEGORIES = [
   "Necklaces",
   "Bracelets",
   "Belts",
   "Earrings",
-  "Baskets & Bags",
-  "Wood Carvings",
-  "Soapstone",
 ];
 
 type Artisan = { id: string; name: string; craft: string; county: string };
@@ -207,10 +206,10 @@ export default function UploadsPage() {
             <span className="inline-flex items-center gap-2 rounded-full border border-cream/30 bg-white/5 px-4 py-1.5 text-xs font-medium uppercase tracking-[0.2em]">
               <Camera size={13} /> Uploads Team
             </span>
-            <h1 className="mt-3 font-display text-2xl font-semibold sm:text-3xl">Add a finished piece</h1>
+            <h1 className="mt-3 font-display text-2xl font-semibold sm:text-3xl">Add a finished beadwork piece</h1>
             <p className="mt-1 max-w-xl text-sm text-cream/70">
-              A photo, a name, a price, and an artisan — that&apos;s it. Publish and
-              it goes live on the marketplace immediately for customers to buy.
+              A photo, a name, a price, and an artisan — that&apos;s it. Publishes
+              straight to the Ushanga catalog, live for customers immediately.
             </p>
           </div>
         </section>
