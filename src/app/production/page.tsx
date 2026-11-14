@@ -36,6 +36,15 @@ const ACTION_LABEL: Record<string, string> = {
   READY: "Mark completed",
 };
 
+// Groups the flat order list into the stages staff actually think in —
+// "what's awaiting production" has to read as its own bucket, not get
+// lost in a mixed grid with quality-check and ready-for-dispatch orders.
+const STAGES: { status: string; title: string; blurb: string }[] = [
+  { status: "IN_PRODUCTION", title: "Awaiting production", blurb: "Accepted, not yet started by the artisan." },
+  { status: "QUALITY_CHECK", title: "In quality check", blurb: "Made — being checked before it's marked ready." },
+  { status: "READY", title: "Ready for dispatch", blurb: "Done — awaiting collection or hand-off." },
+];
+
 export default function ProductionDashboard() {
   const router = useRouter();
   const { profile, ready } = useStaffProfile();
@@ -126,53 +135,83 @@ export default function ProductionDashboard() {
               No active orders right now.
             </p>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {orders.map((o) => (
-                <div key={o.id} className="flex flex-col rounded-2xl border border-sand-deep bg-white p-5">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="font-display text-sm font-semibold text-charcoal">{o.reference}</p>
-                      <p className="mt-0.5 text-xs text-ink-muted">
-                        {o.channel === "WALK_IN" ? "Walk-in visitor" : "Online order"} &middot; {o.customerName}
-                      </p>
+            <div className="flex flex-col gap-10">
+              {STAGES.map((stage) => {
+                const stageOrders = orders.filter((o) => o.status === stage.status);
+                if (stageOrders.length === 0) return null;
+                return (
+                  <div key={stage.status}>
+                    <div className="mb-4 flex items-baseline gap-2.5">
+                      <h2 className="font-display text-lg font-semibold text-charcoal">{stage.title}</h2>
+                      <span className="rounded-full bg-charcoal px-2 py-0.5 text-[11px] font-semibold text-cream">
+                        {stageOrders.length}
+                      </span>
+                      <span className="text-xs text-ink-muted">{stage.blurb}</span>
                     </div>
-                    <span className="shrink-0 rounded-full bg-sand px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-clay-dark">
-                      {LABEL[o.status] ?? o.status}
-                    </span>
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {stageOrders.map((o) => (
+                        <div key={o.id} className="flex flex-col rounded-2xl border border-sand-deep bg-white p-5">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="font-display text-sm font-semibold text-charcoal">{o.reference}</p>
+                              <p className="mt-0.5 text-xs text-ink-muted">
+                                {o.channel === "WALK_IN" ? "Walk-in visitor" : "Online order"} &middot; {o.customerName}
+                              </p>
+                            </div>
+                            <span className="shrink-0 rounded-full bg-sand px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-clay-dark">
+                              {LABEL[o.status] ?? o.status}
+                            </span>
+                          </div>
+
+                          <p className="mt-3 flex items-center gap-1.5 text-sm font-medium text-charcoal-soft">
+                            {o.product
+                              ? o.product.name
+                              : o.customDesign
+                              ? `Custom ${o.customDesign.itemType}${
+                                  o.customDesign.source === "AI_PROMPT" ? "" : ` · ${o.customDesign.patternStyle}`
+                                }`
+                              : "—"}
+                            {o.customDesign?.source === "AI_PROMPT" && (
+                              <Sparkles size={12} className="shrink-0 text-gold" />
+                            )}
+                          </p>
+
+                          {o.artisan ? (
+                            <p className="mt-2 flex w-fit items-center gap-1.5 rounded-full bg-forest/10 py-1 pl-1 pr-3 text-xs font-semibold text-forest">
+                              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-forest text-[9px] font-bold uppercase text-cream">
+                                {o.artisan.name.slice(0, 1)}
+                              </span>
+                              {o.artisan.name}
+                            </p>
+                          ) : (
+                            <p className="mt-2 w-fit rounded-full bg-clay/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-clay">
+                              No artisan assigned
+                            </p>
+                          )}
+
+                          <p className="mt-2 font-display text-base font-semibold text-clay-dark">
+                            {formatKES(o.totalCents)}
+                          </p>
+
+                          <button
+                            onClick={() => advance(o.id)}
+                            disabled={advancing === o.id}
+                            className="mt-4 flex items-center justify-center gap-2 rounded-full bg-charcoal px-4 py-2.5 text-xs font-semibold text-cream transition-opacity disabled:opacity-70"
+                          >
+                            {advancing === o.id ? (
+                              <Spinner size={14} />
+                            ) : (
+                              <>
+                                {ACTION_LABEL[o.status] ?? "Advance"} <ArrowRight size={13} />
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-
-                  <p className="mt-3 flex items-center gap-1.5 text-sm font-medium text-charcoal-soft">
-                    {o.product
-                      ? o.product.name
-                      : o.customDesign
-                      ? `Custom ${o.customDesign.itemType}${
-                          o.customDesign.source === "AI_PROMPT" ? "" : ` · ${o.customDesign.patternStyle}`
-                        }`
-                      : "—"}
-                    {o.customDesign?.source === "AI_PROMPT" && (
-                      <Sparkles size={12} className="shrink-0 text-gold" />
-                    )}
-                  </p>
-                  {o.artisan && <p className="mt-0.5 text-xs text-ink-muted">Artisan: {o.artisan.name}</p>}
-                  <p className="mt-2 font-display text-base font-semibold text-clay-dark">
-                    {formatKES(o.totalCents)}
-                  </p>
-
-                  <button
-                    onClick={() => advance(o.id)}
-                    disabled={advancing === o.id}
-                    className="mt-4 flex items-center justify-center gap-2 rounded-full bg-charcoal px-4 py-2.5 text-xs font-semibold text-cream transition-opacity disabled:opacity-70"
-                  >
-                    {advancing === o.id ? (
-                      <Spinner size={14} />
-                    ) : (
-                      <>
-                        {ACTION_LABEL[o.status] ?? "Advance"} <ArrowRight size={13} />
-                      </>
-                    )}
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

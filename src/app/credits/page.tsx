@@ -16,6 +16,13 @@ const CREDITS = [
   { title: "African masks in Nairobi", license: "CC BY-SA 4.0" },
   { title: "Sisal basket", license: "CC BY-SA 4.0" },
   { title: "Soapstone Carvings Shop, Kisii", license: "CC BY-SA 3.0" },
+  { title: "Maasai beadwork", license: "CC BY-SA 4.0" },
+  { title: "Old Maasai woman making a beaded leather belt on a bowed stick frame", license: "CC BY-SA 4.0" },
+  { title: "Enkarewa (a beaded necklace worn by Maasai women)", license: "CC0" },
+  { title: "Beads and Pride", license: "CC BY-SA 4.0" },
+  { title: "Soapstone artistic carvings", license: "CC BY-SA 4.0" },
+  { title: "An Masia Earring", license: "CC BY-SA 4.0" },
+  { title: "In the making of beads (20)", license: "CC BY 4.0" },
 ];
 
 export default function CreditsPage() {

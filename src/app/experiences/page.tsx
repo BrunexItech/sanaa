@@ -58,7 +58,7 @@ export default function ExperiencesPage() {
           <div className="absolute inset-0 flex items-end">
             <div className="mx-auto w-full max-w-5xl px-5 pb-8 sm:px-8">
               <p className="text-xs text-cream/60">
-                <Link href="/" className="hover:text-cream">Home</Link> &middot; Experiences
+                <Link href="/ushanga" className="hover:text-cream">Home</Link> &middot; Experiences
               </p>
               <h1 className="mt-1 font-display text-3xl font-semibold text-cream sm:text-4xl">
                 Ushanga Experiences

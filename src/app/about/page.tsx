@@ -14,8 +14,8 @@ export const dynamic = "force-dynamic";
 const NARRATIVE = [
   {
     body: "Kenya's handicraft sector sustains hundreds of thousands of livelihoods, yet fewer than one in four artisans has any online presence. Material sourcing, digital literacy, payments and logistics remain significant barriers between artisans and the global markets that most value their work.",
-    image: img.craftMarketWide,
-    alt: "A wide market stall of handcrafted Kenyan goods",
+    image: img.artisanBeadingBeltFrame,
+    alt: "A Maa artisan hand-beading a leather belt on a traditional bowed-stick frame",
   },
   {
     body: "Developed in partnership with county cooperatives, craft guilds and government stakeholders, Ushanga provides a national-standard digital storefront: verified artisan profiles, secure local and international payments, managed logistics, and built-in digital literacy support — so that every sale directly strengthens the artisan economy.",
@@ -39,8 +39,8 @@ export default async function AboutPage() {
         {/* ---------- Hero ---------- */}
         <div className="relative h-72 w-full sm:h-[26rem]">
           <Image
-            src={img.marketVendors}
-            alt="A Maasai market stall of handcrafted beadwork"
+            src={img.maasaiBeadworkOrnament}
+            alt="A large hand-beaded Maasai ornament"
             fill
             priority
             sizes="100vw"
@@ -50,7 +50,7 @@ export default async function AboutPage() {
           <div className="absolute inset-0 flex items-end">
             <div className="mx-auto w-full max-w-5xl px-5 pb-12 sm:px-8">
               <p className="text-xs text-cream/60">
-                <Link href="/" className="hover:text-cream">Home</Link> &middot; Our Story
+                <Link href="/ushanga" className="hover:text-cream">Home</Link> &middot; Our Story
               </p>
               <span className="mt-3 inline-block text-xs font-semibold uppercase tracking-[0.2em] text-gold-soft">
                 The Ushanga Story

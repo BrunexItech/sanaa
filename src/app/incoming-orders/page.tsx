@@ -258,6 +258,18 @@ export default function IncomingOrdersPage() {
                     <p className="mt-2 font-display text-base font-semibold text-clay-dark">
                       {formatKES(o.totalCents)}
                     </p>
+                    {o.artisan ? (
+                      <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-forest">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-forest/10 text-[9px] font-bold uppercase text-forest">
+                          {o.artisan.name.slice(0, 1)}
+                        </span>
+                        Will go to {o.artisan.name}
+                      </p>
+                    ) : (
+                      <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-clay">
+                        No artisan assigned yet
+                      </p>
+                    )}
 
                     <button
                       onClick={() => accept(o.id)}

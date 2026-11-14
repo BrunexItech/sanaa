@@ -8,7 +8,7 @@ import { useAuth } from "@/lib/auth-context";
 import { LogoMark } from "@/components/Logo";
 
 const NAV_LINKS = [
-  { href: "/", label: "Home" },
+  { href: "/ushanga", label: "Home" },
   { href: "/about", label: "Our Story", hasMenu: true },
   { href: "/marketplace", label: "Marketplace", hasMenu: true },
   { href: "/artisans", label: "The Centre", hasMenu: true },
@@ -22,7 +22,7 @@ export function Header() {
   const { user } = useAuth();
   const pathname = usePathname();
 
-  const transparentAtTop = pathname === "/";
+  const transparentAtTop = pathname === "/ushanga";
 
   useEffect(() => {
     if (!transparentAtTop) return;
@@ -43,7 +43,7 @@ export function Header() {
       }`}
     >
       <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-3 px-4 py-3 sm:px-6">
-        <Link href="/" className="flex min-w-0 shrink-0 items-center gap-2">
+        <Link href="/ushanga" className="flex min-w-0 shrink-0 items-center gap-2">
           <LogoMark size={34} />
           <span className="flex min-w-0 flex-col leading-none">
             <span className="font-display text-sm font-semibold tracking-tight text-cream lg:text-lg lg:whitespace-nowrap">

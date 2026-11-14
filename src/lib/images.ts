@@ -28,4 +28,13 @@ export const img = {
   tryonWrist: "/images/tryon-wrist.jpg",
   tryonEar: "/images/tryon-ear.jpg",
   tryonWaist: "/images/tryon-waist.jpg",
+
+  productSoapstoneCurios: "/images/product-soapstone-curios.jpg",
+  productMaraSunsetEarrings: "/images/product-mara-sunset-earrings.jpg",
+  productSekenaniBelt: "/images/product-sekenani-belt.jpg",
+
+  maasaiBeadworkOrnament: "/images/maasai-beadwork-ornament.jpg",
+  artisanBeadingBeltFrame: "/images/artisan-beading-belt-frame.jpg",
+  productEnkarewaNecklace: "/images/product-enkarewa-necklace.jpg",
+  artisanBeadsAndPride: "/images/artisan-beads-and-pride.jpg",
 } as const;

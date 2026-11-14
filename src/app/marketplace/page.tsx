@@ -67,7 +67,7 @@ function MarketplaceContent() {
           <div className="mx-auto flex max-w-7xl flex-col gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-8">
             <div className="min-w-0 flex-1">
               <p className="text-[11px] text-cream/50">
-                <Link href="/" className="hover:text-cream">Home</Link> &middot; Marketplace
+                <Link href="/ushanga" className="hover:text-cream">Home</Link> &middot; Marketplace
               </p>
               <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
                 <h1 className="font-display text-2xl font-semibold text-cream sm:text-3xl">

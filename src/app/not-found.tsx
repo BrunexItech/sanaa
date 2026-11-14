@@ -12,7 +12,7 @@ export default function NotFound() {
         <p className="max-w-sm text-sm text-ink-muted">
           The piece or page you&apos;re looking for doesn&apos;t exist, or may have sold out.
         </p>
-        <Link href="/" className="mt-2 rounded-full bg-charcoal px-6 py-3 text-sm font-semibold text-cream">
+        <Link href="/ushanga" className="mt-2 rounded-full bg-charcoal px-6 py-3 text-sm font-semibold text-cream">
           Back to home
         </Link>
       </main>

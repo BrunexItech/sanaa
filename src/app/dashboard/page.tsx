@@ -96,7 +96,7 @@ export default function DashboardPage() {
                 <button
                   onClick={() => {
                     logout();
-                    router.push("/");
+                    router.push("/ushanga");
                   }}
                   className="mt-1 flex items-center gap-2.5 rounded-xl px-4 py-3 text-left text-sm font-medium text-clay hover:bg-clay/5"
                 >

@@ -53,7 +53,7 @@ export default function LoginPage() {
 
       <div className="flex items-center justify-center bg-cream px-6 py-16">
         <div className="w-full max-w-sm">
-          <Link href="/" className="font-display text-2xl font-semibold text-charcoal lg:hidden">
+          <Link href="/ushanga" className="font-display text-2xl font-semibold text-charcoal lg:hidden">
             Ushanga
           </Link>
           <h1 className="mt-6 font-display text-3xl font-semibold text-charcoal">
